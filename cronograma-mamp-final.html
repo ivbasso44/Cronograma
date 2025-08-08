@@ -1,0 +1,4098 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cronograma MAMP v2.0</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        /* Estilos personalizados */
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .item-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: transform 0.2s ease;
+        }
+
+        .item-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .item-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .item-header:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+
+        .item-header h5 {
+            margin: 0;
+            font-weight: 600;
+        }
+        
+        /* Estilos para seção discreta de postos */
+        .postos-section-minimal {
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 8px;
+        }
+        
+        .postos-indicator {
+            transition: all 0.2s ease;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .postos-indicator:hover {
+            background: rgba(0, 123, 255, 0.05);
+        }
+        
+        .postos-toggle-icon {
+            transition: transform 0.2s ease;
+        }
+        
+        .postos-list-compact {
+            animation: slideDown 0.2s ease;
+        }
+        
+        .postos-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        
+        .posto-tag {
+            background: #f1f3f4;
+            color: #5f6368;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 500;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+        
+        .posto-tag:hover {
+            background: #e8f0fe;
+            color: #1a73e8;
+            border-color: #dadce0;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; max-height: 0; }
+            to { opacity: 1; max-height: 200px; }
+        }
+        
+        
+        /* Botão de edição no cabeçalho */
+        .item-header .btn {
+            color: white;
+            border-color: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1);
+            margin-left: 3px;
+        }
+        
+        .item-header .btn:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.5);
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .item-header .btn:first-child {
+            margin-left: 0;
+        }
+
+        /* Cores de status para cabeçalhos dos itens */
+        .item-status-ok {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+        }
+
+        .item-status-ok:hover {
+            background: linear-gradient(135deg, #218838 0%, #1ba085 100%) !important;
+        }
+
+        .item-status-proximo {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%) !important;
+            color: #212529 !important;
+        }
+
+        .item-status-proximo:hover {
+            background: linear-gradient(135deg, #e0a800 0%, #e8630a 100%) !important;
+            color: #212529 !important;
+        }
+
+        .item-status-vencido {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+        }
+
+        .item-status-vencido:hover {
+            background: linear-gradient(135deg, #c82333 0%, #bd2130 100%) !important;
+        }
+
+        /* Ícone de alerta para itens segregados */
+        .alert-segregado {
+            color: #ffc107;
+            margin-left: 8px;
+            font-size: 1.1em;
+            animation: pulse-warning 2s infinite;
+        }
+
+        .item-status-proximo .alert-segregado {
+            color: #dc3545;
+        }
+
+        @keyframes pulse-warning {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        .item-content {
+            padding: 0;
+        }
+
+        .subitems-container {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .subitems-container.expanded {
+            max-height: 1000px;
+        }
+
+        .subitem-controls {
+            padding: 15px 20px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pendente {
+            background-color: #ffeaa7;
+            color: #fdcb6e;
+        }
+
+        .status-em-andamento {
+            background-color: #81ecec;
+            color: #00b894;
+        }
+
+        .status-segregado {
+            background-color: #fd7e14;
+            color: white;
+        }
+
+        .status-descartado {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .posto-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            margin-left: 8px;
+            background-color: #e3f2fd;
+            color: #1976d2;
+            border-radius: 10px;
+            font-size: 0.7em;
+            font-weight: 500;
+            border: 1px solid #bbdefb;
+        }
+        
+        .alert-sm {
+            padding: 8px 12px;
+            font-size: 0.85em;
+        }
+        
+        .posto-global-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        
+        .posto-global-item:hover {
+            background: #e9ecef;
+            border-color: #ddd;
+        }
+        
+        .posto-info {
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+        }
+        
+        .postos-globais-section {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .postos-globais-header {
+            background: #17a2b8;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Estilos específicos para subitens */
+        .subitems-section {
+            margin-top: 10px;
+            padding: 0 20px 20px;
+        }
+        
+        .section-header {
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .section-header h6 {
+            margin: 0;
+            color: #495057;
+            font-weight: 600;
+        }
+        
+        .section-header-small {
+            margin-bottom: 10px;
+            padding: 8px 15px;
+            background: #e9ecef;
+            border-radius: 6px;
+        }
+        
+        .section-header-small h6 {
+            margin: 0;
+            color: #6c757d;
+            font-weight: 500;
+            font-size: 12px;
+        }
+        
+        .subitens-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .subitem-item {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            transition: all 0.2s ease;
+        }
+        
+        .subitem-item:hover {
+            border-color: #007bff;
+            box-shadow: 0 2px 8px rgba(0,123,255,0.1);
+        }
+        
+        .subitem-info {
+            flex: 1;
+        }
+        
+        .subitem-name {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 6px;
+        }
+        
+        .subitem-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+        
+        .subitem-actions {
+            display: flex;
+            gap: 6px;
+            margin-left: 10px;
+        }
+        
+        .subitem-actions .btn {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        
+        .empty-subitens {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px dashed #dee2e6;
+            color: #6c757d;
+        }
+        
+        .postos-trabalho-info {
+            padding: 0 20px;
+            margin-bottom: 10px;
+        }
+        
+        .postos-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 8px;
+        }
+        
+        .posto-tag {
+            background: #e9ecef;
+            color: #495057;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        .posto-tag-more {
+            background: #007bff;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .posto-tag-more:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        /* Estilos para indicadores de prazo */
+        .prazo-vencido {
+            color: #dc3545 !important;
+            font-weight: bold;
+        }
+
+        .prazo-proximo {
+            color: #fd7e14 !important;
+            font-weight: bold;
+        }
+
+        .prazo-ok {
+            color: #28a745 !important;
+        }
+
+        .prazo-pausado {
+            color: #fd7e14 !important;
+            font-weight: bold;
+        }
+
+        .status-vencido {
+            background-color: #dc3545 !important;
+            color: white;
+        }
+
+        .subitem-item.vencido {
+            border-left: 4px solid #dc3545;
+            background-color: #fff5f5;
+        }
+
+        .subitem-item.proximo-vencimento {
+            border-left: 4px solid #fd7e14;
+            background-color: #fff8f0;
+        }
+
+        .subitem-item.segregado {
+            border-left: 4px solid #fd7e14;
+            background-color: #fff8f0;
+            opacity: 0.8;
+        }
+
+        .badge.bg-info {
+            background-color: #17a2b8 !important;
+        }
+
+        .collapse-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .collapsed .collapse-icon {
+            transform: rotate(-90deg);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+        }
+
+        .empty-state i {
+            font-size: 3em;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        /* Filtros por status */
+        .btn-check:checked + .btn-outline-secondary {
+            background-color: #6c757d;
+            border-color: #6c757d;
+            color: white;
+        }
+        
+        .btn-check:checked + .btn-outline-success {
+            background-color: #198754;
+            border-color: #198754;
+            color: white;
+        }
+        
+        .btn-check:checked + .btn-outline-warning {
+            background-color: #ffc107;
+            border-color: #ffc107;
+            color: #000;
+        }
+        
+        .btn-check:checked + .btn-outline-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+            color: white;
+        }
+        
+        .btn-check:checked + .btn-outline-info {
+            background-color: #0dcaf0;
+            border-color: #0dcaf0;
+            color: #000;
+        }
+        
+        .btn-group .btn {
+            transition: all 0.3s ease;
+        }
+        
+        .btn-group .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Header -->
+        <nav class="navbar navbar-dark mb-4" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+            <div class="container-fluid">
+                <span class="navbar-brand mb-0 h1" style="font-weight: 700; font-size: 1.8rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+                    <i class="fas fa-calendar-alt me-2" style="background: linear-gradient(45deg, #ffd700, #ffed4a); background-clip: text; -webkit-background-clip: text; color: transparent; -webkit-text-fill-color: transparent; font-size: 2rem; text-shadow: none; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));"></i>
+                    <span style="background: linear-gradient(45deg, #ffffff, #e3f2fd); background-clip: text; -webkit-background-clip: text; color: transparent; -webkit-text-fill-color: transparent;">Cronograma</span>
+                    <span style="color: #ffd700; font-weight: 800; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">MAMP</span>
+                </span>
+            </div>
+        </nav>
+
+        <!-- Modal de conflitos -->
+        <div id="conflictModal" class="modal fade" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content border-warning">
+                    <div class="modal-header bg-warning text-dark">
+                        <h5 class="modal-title">⚠️ Conflito de Sincronização Detectado</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Detectamos alterações simultâneas nos dados:</strong></p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>📱 Versão Local (Seu Computador)</h6>
+                                <div id="localVersion" class="bg-light p-3 rounded border"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>🌐 Versão da Rede (Compartilhada)</h6>
+                                <div id="networkVersion" class="bg-light p-3 rounded border"></div>
+                            </div>
+                        </div>
+                        <hr>
+                        <p><strong>Como deseja resolver?</strong></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="resolverConflito('manter-local')">
+                            <i class="fas fa-laptop"></i> Manter Versão Local
+                        </button>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="resolverConflito('usar-rede')">
+                            <i class="fas fa-cloud"></i> Usar Versão da Rede
+                        </button>
+                        <button type="button" class="btn btn-success" data-bs-dismiss="modal" onclick="resolverConflito('mesclar')">
+                            <i class="fas fa-code-branch"></i> Mesclar Automaticamente
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controles principais -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <input type="text" 
+                           id="newItemName" 
+                           class="form-control" 
+                           placeholder="Nome do novo item principal">
+                    <input type="number" 
+                           id="newItemFrequencia" 
+                           class="form-control" 
+                           placeholder="Frequência (dias)"
+                           min="1"
+                           style="max-width: 150px;">
+                    <button class="btn btn-success" onclick="addMainItem()">
+                        <i class="fas fa-plus me-1"></i>
+                        Adicionar Item
+                    </button>
+                </div>
+                <small class="text-muted">Deixe a frequência em branco se não for uma tarefa recorrente</small>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-info w-100" onclick="abrirHistorico()">
+                    <i class="fas fa-history me-1"></i>
+                    Ver Histórico
+                </button>
+            </div>
+            <div class="col-md-3">
+                <div class="btn-group w-100" role="group">
+                    <button class="btn btn-success" type="button" onclick="exportExcel()">
+                        <i class="fas fa-file-export me-1"></i>
+                        Exportar Excel
+                    </button>
+                    <button class="btn btn-outline-success" type="button" onclick="importExcel()">
+                        <i class="fas fa-file-import me-1"></i>
+                        Importar Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros por status -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body py-3">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap">
+                            <h6 class="mb-0 me-3">
+                                <i class="fas fa-filter me-2"></i>
+                                Filtrar por Status
+                            </h6>
+                            <div class="btn-group" role="group">
+                                <input type="radio" class="btn-check" name="statusFilter" id="filterAll" value="todos" checked onchange="filterItemsByStatus()">
+                                <label class="btn btn-outline-secondary btn-sm" for="filterAll">
+                                    <i class="fas fa-list me-1"></i>
+                                    Todos
+                                </label>
+
+                                <input type="radio" class="btn-check" name="statusFilter" id="filterOk" value="verde" onchange="filterItemsByStatus()">
+                                <label class="btn btn-outline-success btn-sm" for="filterOk">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    OK
+                                </label>
+
+                                <input type="radio" class="btn-check" name="statusFilter" id="filterWarning" value="amarela" onchange="filterItemsByStatus()">
+                                <label class="btn btn-outline-warning btn-sm" for="filterWarning">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    Próximos
+                                </label>
+
+                                <input type="radio" class="btn-check" name="statusFilter" id="filterDanger" value="vermelha" onchange="filterItemsByStatus()">
+                                <label class="btn btn-outline-danger btn-sm" for="filterDanger">
+                                    <i class="fas fa-times-circle me-1"></i>
+                                    Atrasados
+                                </label>
+
+                                <input type="radio" class="btn-check" name="statusFilter" id="filterSegregated" value="segregados" onchange="filterItemsByStatus()">
+                                <label class="btn btn-outline-info btn-sm" for="filterSegregated">
+                                    <i class="fas fa-tools me-1"></i>
+                                    Segregados
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de itens -->
+        <div id="itemsList" class="row">
+            <!-- Items serão adicionados dinamicamente aqui -->
+        </div>
+    </div>
+
+    <!-- Modal para editar posto de trabalho -->
+    <div class="modal fade" id="editSubitemModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Subitem</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editSubitemForm">
+                        <input type="hidden" id="editItemId">
+                        <input type="hidden" id="editSubitemId">
+                        
+                        <div class="mb-3">
+                            <label for="editSubitemName" class="form-label">Nome do Subitem</label>
+                            <input type="text" class="form-control" id="editSubitemName" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="editSubitemStatus" class="form-label">Status</label>
+                            <select class="form-select" id="editSubitemStatus" onchange="verificarStatusDescartado()">
+                                <option value="Pendente">Pendente</option>
+                                <option value="Em Andamento">Em Andamento</option>
+                                <option value="Segregado" class="text-warning">Segregado (Pausa o prazo)</option>
+                                <option value="Descartado" class="text-danger">Descartado (Remove o item)</option>
+                            </select>
+                            <div id="alertDescartado" class="alert alert-warning mt-2" style="display: none;">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Atenção:</strong> O status "Descartado" removerá este item permanentemente!
+                            </div>
+                            <div id="alertSegregado" class="alert alert-info mt-2" style="display: none;">
+                                <i class="fas fa-pause me-2"></i>
+                                <strong>Info:</strong> O status "Segregado" pausa a contagem do prazo até retornar para "Em Andamento".
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="editSubitemPostoTrabalho" class="form-label">
+                                <i class="fas fa-map-marker-alt text-primary me-1"></i>
+                                Posto de Trabalho
+                            </label>
+                            <select class="form-select" id="editSubitemPostoTrabalho">
+                                <option value="">Selecione um posto...</option>
+                            </select>
+                            <div class="form-text">Posto de trabalho onde este subitem será executado</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="editSubitemObservations" class="form-label">Observações</label>
+                            <textarea class="form-control" id="editSubitemObservations" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="editSubitemProximoPrazo" class="form-label">Próximo Prazo</label>
+                            <input type="date" class="form-control" id="editSubitemProximoPrazo" readonly>
+                            <div class="form-text">Calculado automaticamente quando a tarefa for concluída</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="saveSubitem()">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para histórico de conclusões -->
+    <div class="modal fade" id="historicoModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-history me-2"></i>
+                        Histórico de Conclusões
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <input type="text" 
+                                   id="searchHistorico" 
+                                   class="form-control" 
+                                   placeholder="🔍 Buscar por tarefa..."
+                                   onkeyup="filtrarHistorico()">
+                        </div>
+                        <div class="col-md-4">
+                            <input type="date" 
+                                   id="filtroDataInicio" 
+                                   class="form-control" 
+                                   placeholder="Data início"
+                                   onchange="filtrarHistorico()">
+                        </div>
+                        <div class="col-md-4">
+                            <input type="date" 
+                                   id="filtroDataFim" 
+                                   class="form-control" 
+                                   placeholder="Data fim"
+                                   onchange="filtrarHistorico()">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <button class="btn btn-success" onclick="exportarHistorico()">
+                            <i class="fas fa-file-excel me-1"></i>
+                            Exportar Histórico para Excel
+                        </button>
+                        <button class="btn btn-info ms-2" onclick="limparFiltros()">
+                            <i class="fas fa-times me-1"></i>
+                            Limpar Filtros
+                        </button>
+                    </div>
+                    
+                    <div id="historicoTabela" class="table-responsive">
+                        <!-- Tabela será preenchida dinamicamente -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input file hidden para importar Excel -->
+    <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;" onchange="handleFileImport(event)">
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Estado da aplicação
+        let cronogramaData = [];
+        let historicoData = [];
+        
+        // Sistema Híbrido - Configurações
+        let sistemaHibrido = {
+            ativo: true,
+            pastaRede: '', // Será configurado pelo usuário
+            ultimaSincronizacao: null,
+            intervalSincronizacao: 30000, // 30 segundos
+            tentativasReconexao: 0,
+            maxTentativas: 3,
+            modoOffline: false
+        };
+        
+        let syncInterval;
+        let conflictModal;
+        
+        // Lista global de postos de trabalho (dados iniciais)
+        let postosTrabalhoGlobais = [
+            { id: 1, nome: 'Aparadora de backsheet' },
+            { id: 2, nome: 'Aparadora de encapsulante traseiro' },
+            { id: 3, nome: 'Aplicadora de cola de envase' },
+            { id: 4, nome: 'Aplicação Etiqueta Inmetro' },
+            { id: 5, nome: 'Aplicação Etiqueta de Especificação' },
+            { id: 6, nome: 'Aplicação da serial number' },
+            { id: 7, nome: 'Auto Framing' },
+            { id: 8, nome: 'Auto Soldering' },
+            { id: 9, nome: 'Auto edge trimming' },
+            { id: 10, nome: 'Autobussing' },
+            { id: 11, nome: 'Carregadora de vidro traseiro' },
+            { id: 12, nome: 'Carregadora de vidro frontal' },
+            { id: 13, nome: 'Dobra de Barramento' },
+            { id: 14, nome: 'EL 3' },
+            { id: 15, nome: 'EL OFF' },
+            { id: 16, nome: 'EL Teste Pré Laminação' },
+            { id: 17, nome: 'EVA adicional' },
+            { id: 18, nome: 'Etiquetadora de modulo' },
+            { id: 19, nome: 'Flash Test' },
+            { id: 20, nome: 'Hipot' },
+            { id: 21, nome: 'Inspeção 90º' },
+            { id: 22, nome: 'Inspeção EL String' },
+            { id: 23, nome: 'Inspeção Final 180º' },
+            { id: 24, nome: 'Inspeção de solda caixa de junção e limpeza de frame' },
+            { id: 25, nome: 'Laminadora' },
+            { id: 26, nome: 'Layup automático' },
+            { id: 27, nome: 'Limpeza de painel lado frontal' },
+            { id: 28, nome: 'Montagem Manual de Módulos' },
+            { id: 29, nome: 'Montagem da Caixa de Junção' },
+            { id: 30, nome: 'Montagem Tampa da Caixa de Junção' },
+            { id: 31, nome: 'NDC' },
+            { id: 32, nome: 'Paletizadora seletora' },
+            { id: 33, nome: 'Reparo OFF' },
+            { id: 34, nome: 'Reparo ON' },
+            { id: 35, nome: 'Reparo de painel acabado' },
+            { id: 36, nome: 'Sala de cura' },
+            { id: 37, nome: 'Serial Traseiro' },
+            { id: 38, nome: 'Stringer' },
+            { id: 39, nome: 'Vidro traseiro' }
+        ];
+        
+        let editModal;
+        let historicoModal;
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            editModal = new bootstrap.Modal(document.getElementById('editSubitemModal'));
+            historicoModal = new bootstrap.Modal(document.getElementById('historicoModal'));
+            
+            // Criar botão de emergência
+            criarBotaoEmergencia();
+            
+            // Sistema híbrido desativado
+            // inicializarSistemaHibrido();
+            
+            // Adicionar listener para ESC fechar modal
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    console.log('ESC pressionado, fechando modais...');
+                    if (historicoModal) {
+                        historicoModal.hide();
+                    }
+                    if (editModal) {
+                        editModal.hide();
+                    }
+                }
+            });
+            
+            loadData();
+            
+            // SISTEMA HÍBRIDO COMPLETAMENTE DESATIVADO
+            sistemaHibrido.ativo = false;
+            console.log('❌ Sistema híbrido desativado - sem sincronização automática');
+        });
+
+        // Função para salvar configurações do sistema híbrido
+        function salvarConfigSistemaHibrido() {
+            try {
+                localStorage.setItem('sistemaHibrido', JSON.stringify(sistemaHibrido));
+                console.log('✅ Configurações do sistema híbrido salvas');
+            } catch (error) {
+                console.error('❌ Erro ao salvar configurações:', error);
+            }
+        }
+
+        // Função para carregar configurações do sistema híbrido
+        function carregarConfigSistemaHibrido() {
+            try {
+                const config = localStorage.getItem('sistemaHibrido');
+                if (config) {
+                    const configCarregada = JSON.parse(config);
+                    sistemaHibrido = { ...sistemaHibrido, ...configCarregada };
+                    console.log('✅ Configurações do sistema híbrido carregadas');
+                } else {
+                    console.log('ℹ️ Usando configurações padrão do sistema híbrido');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao carregar configurações:', error);
+            }
+        }
+
+        // ====== SISTEMA HÍBRIDO - FUNÇÕES PRINCIPAIS ======
+        
+        // Inicializar sistema híbrido
+        function inicializarSistemaHibrido() {
+            console.log('🔄 Inicializando Sistema Híbrido...');
+            
+            // Carregar configurações salvas
+            const configSalva = localStorage.getItem('sistemaHibridoConfig');
+            if (configSalva) {
+                sistemaHibrido = { ...sistemaHibrido, ...JSON.parse(configSalva) };
+            }
+            
+            // Atualizar status inicial
+            atualizarStatusSincronizacao('local', 'Sistema inicializado - dados locais carregados');
+            
+            // Iniciar sincronização automática se configurado
+            if (sistemaHibrido.pastaRede) {
+                iniciarSincronizacaoAutomatica();
+            } else {
+                atualizarStatusSincronizacao('config', 'Configure a pasta de rede para sincronização automática');
+            }
+        }
+        
+        // Configurar pasta de rede
+        function configurarPastaRede() {
+            const pastaAtual = sistemaHibrido.pastaRede || '';
+            const novaPasta = prompt(
+                `Configure o caminho da pasta de rede compartilhada:\n\n` +
+                `Exemplos:\n` +
+                `• Windows: \\\\servidor\\cronograma\\dados.json\n` +
+                `• Linux: /mnt/servidor/cronograma/dados.json\n` +
+                `• Pasta local: C:\\cronograma-mamp\\dados.json\n\n` +
+                `Pasta atual: ${pastaAtual || 'Não configurada'}`,
+                pastaAtual
+            );
+            
+            if (novaPasta !== null && novaPasta.trim() !== '') {
+                sistemaHibrido.pastaRede = novaPasta.trim();
+                salvarConfigSistemaHibrido();
+                
+                // Testar conexão
+                testarConexaoRede().then(sucesso => {
+                    if (sucesso) {
+                        iniciarSincronizacaoAutomatica();
+                        atualizarStatusSincronizacao('online', 'Pasta de rede configurada e conectada');
+                        showAlert('✅ Pasta de rede configurada com sucesso!', 'success');
+                    } else {
+                        atualizarStatusSincronizacao('erro', 'Pasta configurada mas não acessível no momento');
+                        showAlert('⚠️ Pasta configurada, mas não foi possível conectar. Verificando...', 'warning');
+                    }
+                });
+            }
+        }
+        
+        // Sincronização manual
+        function sincronizarManual() {
+            if (!sistemaHibrido.pastaRede) {
+                showAlert('Configure primeiro a pasta de rede', 'warning');
+                configurarPastaRede();
+                return;
+            }
+            
+            atualizarStatusSincronizacao('sincronizando', 'Sincronizando dados...');
+            executarSincronizacao().then(resultado => {
+                if (resultado.sucesso) {
+                    showAlert('✅ Sincronização concluída com sucesso!', 'success');
+                } else {
+                    showAlert('❌ Erro na sincronização: ' + resultado.erro, 'danger');
+                }
+            });
+        }
+        
+        // Atualizar status de sincronização na interface
+        function atualizarStatusSincronizacao(status, mensagem) {
+            const statusElement = document.getElementById('syncStatusText');
+            const iconElement = document.getElementById('syncIcon');
+            const alertElement = document.getElementById('syncStatus');
+            
+            if (!statusElement) return;
+            
+            // Remover classes antigas
+            alertElement.className = 'alert fade show mb-4';
+            iconElement.className = 'fas fa-2x me-3';
+            
+            switch (status) {
+                case 'online':
+                    alertElement.classList.add('alert-success');
+                    iconElement.classList.add('fa-check-circle');
+                    statusElement.innerHTML = `🟢 Online - ${mensagem}`;
+                    break;
+                case 'sincronizando':
+                    alertElement.classList.add('alert-info');
+                    iconElement.classList.add('fa-sync-alt', 'fa-spin');
+                    statusElement.innerHTML = `🔄 Sincronizando - ${mensagem}`;
+                    break;
+                case 'local':
+                    alertElement.classList.add('alert-warning');
+                    iconElement.classList.add('fa-laptop');
+                    statusElement.innerHTML = `🟡 Modo Local - ${mensagem}`;
+                    break;
+                case 'erro':
+                    alertElement.classList.add('alert-danger');
+                    iconElement.classList.add('fa-exclamation-triangle');
+                    statusElement.innerHTML = `🔴 Erro - ${mensagem}`;
+                    break;
+                case 'config':
+                    alertElement.classList.add('alert-info');
+                    iconElement.classList.add('fa-cog');
+                    statusElement.innerHTML = `⚙️ Configuração - ${mensagem}`;
+                    break;
+            }
+        }
+        
+        // Testar conexão com a rede
+        async function testarConexaoRede() {
+            if (!sistemaHibrido.pastaRede) return false;
+            
+            try {
+                // Simular teste de conexão (em ambiente real, usaria APIs específicas)
+                console.log('🌐 Testando conexão com:', sistemaHibrido.pastaRede);
+                
+                // Para ambiente web, verificar se é um caminho válido
+                if (sistemaHibrido.pastaRede.includes('://') || sistemaHibrido.pastaRede.startsWith('\\\\') || sistemaHibrido.pastaRede.startsWith('/')) {
+                    // Simular sucesso/falha baseado no formato
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error('❌ Erro ao testar conexão:', error);
+                return false;
+            }
+        }
+        
+        // Executar sincronização
+        async function executarSincronizacao() {
+            try {
+                console.log('🔄 Executando sincronização...');
+                
+                const dadosLocais = {
+                    cronogramaData: cronogramaData,
+                    historicoData: historicoData,
+                    postosTrabalhoGlobais: postosTrabalhoGlobais,
+                    ultimaModificacao: Date.now(),
+                    versao: '2.0-hibrido'
+                };
+                
+                // Tentar ler dados da rede
+                const dadosRede = await lerDadosRede();
+                
+                if (dadosRede) {
+                    // Verificar se há conflitos
+                    const temConflito = verificarConflitos(dadosLocais, dadosRede);
+                    
+                    if (temConflito) {
+                        return await resolverConflitoSincronizacao(dadosLocais, dadosRede);
+                    } else {
+                        // Usar dados mais recentes
+                        if (dadosRede.ultimaModificacao > (sistemaHibrido.ultimaSincronizacao || 0)) {
+                            aplicarDadosRede(dadosRede);
+                            atualizarStatusSincronizacao('online', 'Dados atualizados da rede');
+                        } else {
+                            await salvarDadosRede(dadosLocais);
+                            atualizarStatusSincronizacao('online', 'Dados locais enviados para rede');
+                        }
+                    }
+                } else {
+                    // Primeira sincronização ou rede inacessível
+                    await salvarDadosRede(dadosLocais);
+                    atualizarStatusSincronizacao('online', 'Dados sincronizados com a rede');
+                }
+                
+                sistemaHibrido.ultimaSincronizacao = Date.now();
+                sistemaHibrido.tentativasReconexao = 0;
+                salvarConfigSistemaHibrido();
+                
+                return { sucesso: true };
+            } catch (error) {
+                console.error('❌ Erro na sincronização:', error);
+                sistemaHibrido.tentativasReconexao++;
+                
+                if (sistemaHibrido.tentativasReconexao >= sistemaHibrido.maxTentativas) {
+                    sistemaHibrido.modoOffline = true;
+                    atualizarStatusSincronizacao('local', 'Modo offline ativado - dados salvos localmente');
+                } else {
+                    atualizarStatusSincronizacao('erro', `Tentativa ${sistemaHibrido.tentativasReconexao}/${sistemaHibrido.maxTentativas}`);
+                }
+                
+                return { sucesso: false, erro: error.message };
+            }
+        }
+        
+        // Ler dados da rede (simulado)
+        async function lerDadosRede() {
+            try {
+                // Em implementação real, isso leria de um arquivo na rede
+                // Por ora, simular com localStorage específico para "rede"
+                const dadosRede = localStorage.getItem('cronogramaDataRede');
+                return dadosRede ? JSON.parse(dadosRede) : null;
+            } catch (error) {
+                console.error('❌ Erro ao ler dados da rede:', error);
+                return null;
+            }
+        }
+        
+        // Salvar dados na rede (simulado)
+        async function salvarDadosRede(dados) {
+            try {
+                // Em implementação real, isso salvaria em um arquivo na rede
+                // Por ora, simular com localStorage específico para "rede"
+                localStorage.setItem('cronogramaDataRede', JSON.stringify(dados));
+                console.log('✅ Dados salvos na rede (simulado)');
+                return true;
+            } catch (error) {
+                console.error('❌ Erro ao salvar dados na rede:', error);
+                throw error;
+            }
+        }
+        
+        // Verificar conflitos entre versões
+        function verificarConflitos(dadosLocais, dadosRede) {
+            // Verificar se ambas as versões foram modificadas recentemente
+            const tempoLimite = 5 * 60 * 1000; // 5 minutos
+            const agora = Date.now();
+            
+            const localRecente = (agora - dadosLocais.ultimaModificacao) < tempoLimite;
+            const redeRecente = (agora - dadosRede.ultimaModificacao) < tempoLimite;
+            
+            return localRecente && redeRecente && 
+                   dadosLocais.ultimaModificacao !== dadosRede.ultimaModificacao;
+        }
+        
+        // Função para resolver conflito de sincronização (chamada pelo modal)
+        function resolverConflito(opcao) {
+            console.log('🔧 Resolvendo conflito com opção:', opcao);
+            
+            try {
+                let resultado;
+                
+                switch (opcao) {
+                    case 'manter-local':
+                        console.log('📱 Mantendo versão local');
+                        resultado = 'Versão local mantida';
+                        break;
+                    case 'usar-rede':
+                        console.log('🌐 Usando versão da rede');
+                        // Simular aplicação de dados da rede
+                        cronogramaData.push({ 
+                            id: Date.now(), 
+                            name: 'Item da Rede (Teste)', 
+                            subitens: [],
+                            frequencia: '',
+                            postosTrabalho: []
+                        });
+                        resultado = 'Versão da rede aplicada';
+                        break;
+                    case 'mesclar':
+                        console.log('🔀 Mesclando dados');
+                        // Simular mesclagem
+                        cronogramaData.push({ 
+                            id: Date.now(), 
+                            name: 'Item Mesclado (Teste)', 
+                            subitens: [],
+                            frequencia: '',
+                            postosTrabalho: []
+                        });
+                        resultado = 'Dados mesclados automaticamente';
+                        break;
+                    default:
+                        resultado = 'Opção inválida';
+                }
+                
+                // Fechar modal ANTES de atualizar interface
+                destruirModal();
+                
+                // Notificar callback se existir (para sincronização real)
+                if (window.resolveConflictCallback) {
+                    window.resolveConflictCallback({ sucesso: true, acao: resultado });
+                    delete window.resolveConflictCallback;
+                }
+                
+                // Atualizar interface após pequeno delay
+                setTimeout(() => {
+                    renderItems();
+                    saveData();
+                    showAlert('✅ Conflito resolvido: ' + resultado, 'success');
+                }, 100);
+                
+                console.log('✅ Conflito resolvido com sucesso');
+                
+            } catch (error) {
+                console.error('❌ Erro ao resolver conflito:', error);
+                destruirModal();
+                
+                // Notificar erro ao callback
+                if (window.resolveConflictCallback) {
+                    window.resolveConflictCallback({ sucesso: false, erro: error.message });
+                    delete window.resolveConflictCallback;
+                }
+                
+                showAlert('❌ Erro ao resolver conflito: ' + error.message, 'danger');
+            }
+        }
+
+        // Função SUPER AGRESSIVA para fechar modal
+        function destruirModal() {
+            console.log('� DESTRUINDO MODAL COMPLETAMENTE...');
+            
+            try {
+                // Remover TODOS os modais da página
+                const modals = document.querySelectorAll('.modal, [id*="modal"], [class*="modal"]');
+                modals.forEach(modal => {
+                    modal.remove();
+                });
+                
+                // Remover TODOS os backdrops
+                const backdrops = document.querySelectorAll('.modal-backdrop, [class*="backdrop"]');
+                backdrops.forEach(backdrop => {
+                    backdrop.remove();
+                });
+                
+                // Limpar COMPLETAMENTE o body
+                document.body.classList.remove('modal-open');
+                document.body.style = '';
+                document.body.removeAttribute('style');
+                
+                // Remover qualquer elemento com z-index alto
+                document.querySelectorAll('*').forEach(el => {
+                    const zIndex = window.getComputedStyle(el).zIndex;
+                    if (zIndex && parseInt(zIndex) > 1000) {
+                        el.style.zIndex = '';
+                        el.style.display = '';
+                    }
+                });
+                
+                // Forçar scroll normal
+                document.documentElement.style.overflow = '';
+                document.body.style.overflow = '';
+                
+                console.log('🔥 MODAL DESTRUÍDO COMPLETAMENTE');
+                
+                // Esconder botão de emergência
+                esconderBotaoEmergencia();
+                
+                // NÃO recriar automaticamente - só mostrar sucesso
+                showAlert('✅ Modal fechado definitivamente!', 'success');
+                
+            } catch (error) {
+                console.error('Erro ao destruir modal:', error);
+                alert('Modal travado! Recarregando página...');
+                location.reload();
+            }
+        }
+        
+        // Recriar modal limpo
+        function criarModalLimpo() {
+            const modalHTML = `
+            <div id="conflictModal" class="modal fade" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content border-warning">
+                        <div class="modal-header bg-warning text-dark">
+                            <h5 class="modal-title">⚠️ Conflito de Sincronização Detectado</h5>
+                            <button type="button" class="btn-close" onclick="destruirModal()"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p><strong>Detectamos alterações simultâneas nos dados:</strong></p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>📱 Versão Local (Seu Computador)</h6>
+                                    <div id="localVersion" class="bg-light p-3 rounded border"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>🌐 Versão da Rede (Compartilhada)</h6>
+                                    <div id="networkVersion" class="bg-light p-3 rounded border"></div>
+                                </div>
+                            </div>
+                            <hr>
+                            <p><strong>Como deseja resolver?</strong></p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="resolverConflito('manter-local'); destruirModal();">
+                                <i class="fas fa-laptop"></i> Manter Versão Local
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="resolverConflito('usar-rede'); destruirModal();">
+                                <i class="fas fa-cloud"></i> Usar Versão da Rede
+                            </button>
+                            <button type="button" class="btn btn-success" onclick="resolverConflito('mesclar'); destruirModal();">
+                                <i class="fas fa-code-branch"></i> Mesclar Automaticamente
+                            </button>
+                            <button type="button" class="btn btn-danger" onclick="destruirModal();">
+                                ❌ FECHAR
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+            
+            // Inserir no final do body
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+        
+        // Função alternativa para fechar modal específico
+        function fecharModalConflito() {
+            console.log('🔧 Fechando modal de conflito especificamente...');
+            
+            const modal = document.getElementById('conflictModal');
+            if (!modal) {
+                console.log('Modal não encontrado');
+                return;
+            }
+            
+            // Forçar fechamento
+            modal.style.display = 'none';
+            modal.classList.remove('show', 'fade');
+            modal.setAttribute('aria-hidden', 'true');
+            
+            // Limpar backdrop
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) {
+                backdrop.remove();
+            }
+            
+            // Limpar body
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            
+            console.log('✅ Modal de conflito fechado');
+            showAlert('✅ Modal fechado', 'info');
+        }
+        
+        // Event listeners globais SIMPLES
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                console.log('ESC pressionado - DESTRUINDO modal');
+                destruirModal();
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, true); // true = captura na fase de captura
+        
+        // Adicionar botão de emergência sempre visível
+        function criarBotaoEmergencia() {
+            const btn = document.createElement('button');
+            btn.innerHTML = '🚨 FECHAR MODAL';
+            btn.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                z-index: 9999;
+                background: red;
+                color: white;
+                border: none;
+                padding: 10px;
+                border-radius: 5px;
+                font-weight: bold;
+                cursor: pointer;
+                display: none;
+            `;
+            btn.id = 'emergency-close';
+            btn.onclick = destruirModal;
+            document.body.appendChild(btn);
+        }
+        
+        // Mostrar botão de emergência quando modal abrir
+        function mostrarBotaoEmergencia() {
+            const btn = document.getElementById('emergency-close');
+            if (btn) {
+                btn.style.display = 'block';
+            }
+        }
+        
+        // Esconder botão de emergência
+        function esconderBotaoEmergencia() {
+            const btn = document.getElementById('emergency-close');
+            if (btn) {
+                btn.style.display = 'none';
+            }
+        }
+
+        // Função para testar modal de conflitos (SEM Bootstrap)
+        function testarConflito() {
+            console.log('🧪 Testando modal de conflitos (método simples)...');
+            
+            // Verificar se modal existe, se não, criar
+            let modal = document.getElementById('conflictModal');
+            if (!modal) {
+                console.log('Modal não existe, criando...');
+                criarModalLimpo();
+                modal = document.getElementById('conflictModal');
+            }
+            
+            const localVersion = document.getElementById('localVersion');
+            const networkVersion = document.getElementById('networkVersion');
+            
+            if (!modal || !localVersion || !networkVersion) {
+                console.error('❌ Elementos do modal não encontrados');
+                showAlert('❌ Erro ao criar modal', 'danger');
+                return;
+            }
+            
+            // Preencher dados de exemplo
+            localVersion.innerHTML = `
+                <strong>Itens:</strong> ${cronogramaData.length}<br>
+                <strong>Histórico:</strong> ${historicoData.length}<br>
+                <strong>Modificado:</strong> ${new Date().toLocaleString()}
+            `;
+            
+            networkVersion.innerHTML = `
+                <strong>Itens:</strong> ${cronogramaData.length + 1}<br>
+                <strong>Histórico:</strong> ${historicoData.length}<br>
+                <strong>Modificado:</strong> ${new Date(Date.now() - 60000).toLocaleString()}
+            `;
+            
+            // Mostrar modal SEM Bootstrap - só CSS
+            modal.style.display = 'block';
+            modal.style.zIndex = '1050';
+            modal.classList.add('show');
+            
+            // Criar backdrop simples
+            const existingBackdrop = document.getElementById('simple-backdrop');
+            if (existingBackdrop) {
+                existingBackdrop.remove();
+            }
+            
+            const backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            backdrop.style.zIndex = '1040';
+            backdrop.id = 'simple-backdrop';
+            backdrop.onclick = () => destruirModal();
+            document.body.appendChild(backdrop);
+            
+            // Bloquear scroll
+            document.body.style.overflow = 'hidden';
+            
+            // Mostrar botão de emergência
+            mostrarBotaoEmergencia();
+            
+            console.log('✅ Modal exibido (método simples)');
+        }
+
+        // Resolver conflito de sincronização (DESABILITADO - usando nova implementação)
+        async function resolverConflitoSincronizacao(dadosLocais, dadosRede) {
+            console.log('🔄 Conflito detectado - abrindo modal de resolução...');
+            
+            return new Promise((resolve, reject) => {
+                try {
+                    // Verificar se já existe modal aberto
+                    const modalExistente = document.getElementById('conflictModal');
+                    if (modalExistente && modalExistente.style.display !== 'none') {
+                        console.log('⚠️ Modal já está aberto - ignorando novo conflito');
+                        resolve({ sucesso: true, acao: 'Modal já aberto - conflito ignorado' });
+                        return;
+                    }
+                    
+                    // Criar modal limpo e configurar resolução
+                    criarModalLimpo();
+                    
+                    const modal = document.getElementById('conflictModal');
+                    const localVersion = document.getElementById('localVersion');
+                    const networkVersion = document.getElementById('networkVersion');
+                    
+                    if (!modal || !localVersion || !networkVersion) {
+                        console.error('❌ Elementos do modal não encontrados');
+                        resolve({ sucesso: false, erro: 'Erro ao criar modal' });
+                        return;
+                    }
+                    
+                    // Preencher dados reais do conflito
+                    localVersion.innerHTML = `
+                        <strong>Itens:</strong> ${dadosLocais.cronogramaData.length}<br>
+                        <strong>Histórico:</strong> ${dadosLocais.historicoData.length}<br>
+                        <strong>Modificado:</strong> ${new Date(dadosLocais.ultimaModificacao).toLocaleString()}
+                    `;
+                    
+                    networkVersion.innerHTML = `
+                        <strong>Itens:</strong> ${dadosRede.cronogramaData.length}<br>
+                        <strong>Histórico:</strong> ${dadosRede.historicoData.length}<br>
+                        <strong>Modificado:</strong> ${new Date(dadosRede.ultimaModificacao).toLocaleString()}
+                    `;
+                    
+                    // Mostrar modal
+                    modal.style.display = 'block';
+                    modal.style.zIndex = '1050';
+                    modal.classList.add('show');
+                    
+                    // Salvar callback para resolução
+                    window.resolveConflictCallback = resolve;
+                    
+                    console.log('✅ Modal de conflito real exibido');
+                    
+                } catch (error) {
+                    console.error('❌ Erro ao resolver conflito:', error);
+                    resolve({ sucesso: false, erro: error.message });
+                }
+            });
+        }
+        
+        // Mostrar modal de conflito (DESABILITADO - usando nova implementação)
+        function mostrarModalConflito(dadosLocais, dadosRede, callback) {
+            console.log('⚠️ Função antiga de modal chamada - ignorando');
+            if (callback) {
+                callback({ sucesso: true, acao: 'Modal ignorado' });
+            }
+        }
+        
+        // Aplicar dados da rede localmente
+        function aplicarDadosRede(dadosRede) {
+            cronogramaData = dadosRede.cronogramaData || [];
+            historicoData = dadosRede.historicoData || [];
+            postosTrabalhoGlobais = dadosRede.postosTrabalhoGlobais || postosTrabalhoGlobais;
+            
+            renderItems();
+            saveDataLocal(); // Salvar localmente como backup
+        }
+        
+        // Mesclar dados (estratégia simples)
+        function mesclarDados(dadosLocais, dadosRede) {
+            return {
+                cronogramaData: [...dadosLocais.cronogramaData, ...dadosRede.cronogramaData]
+                    .filter((item, index, arr) => arr.findIndex(i => i.id === item.id) === index),
+                historicoData: [...dadosLocais.historicoData, ...dadosRede.historicoData]
+                    .filter((item, index, arr) => arr.findIndex(i => i.id === item.id) === index)
+                    .sort((a, b) => new Date(b.dataExecucao) - new Date(a.dataExecucao)),
+                postosTrabalhoGlobais: [...dadosLocais.postosTrabalhoGlobais, ...dadosRede.postosTrabalhoGlobais]
+                    .filter((item, index, arr) => arr.findIndex(i => i.id === item.id) === index),
+                ultimaModificacao: Math.max(dadosLocais.ultimaModificacao, dadosRede.ultimaModificacao),
+                versao: '2.0-hibrido'
+            };
+        }
+        
+        // Iniciar sincronização automática
+        function iniciarSincronizacaoAutomatica() {
+            if (syncInterval) clearInterval(syncInterval);
+            
+            syncInterval = setInterval(() => {
+                if (!sistemaHibrido.modoOffline && sistemaHibrido.pastaRede) {
+                    // Verificar se modal está aberto antes de sincronizar
+                    const modalAberto = document.getElementById('conflictModal');
+                    if (!modalAberto || modalAberto.style.display === 'none') {
+                        executarSincronizacao();
+                    }
+                }
+            }, sistemaHibrido.intervalSincronizacao);
+            
+            console.log('🔄 Sincronização automática iniciada');
+        }
+        
+        // Salvar configuração do sistema híbrido
+        function salvarConfigSistemaHibrido() {
+            localStorage.setItem('sistemaHibridoConfig', JSON.stringify(sistemaHibrido));
+        }
+        
+        // Modificar saveData para incluir sincronização (DESATIVADO)
+        function saveDataHibrido() {
+            saveDataLocal(); // Salvar localmente sempre
+            
+            // Sistema híbrido desativado
+            // if (sistemaHibrido.ativo && sistemaHibrido.pastaRede && !sistemaHibrido.modoOffline) {
+            //     // Sincronizar em background
+            //     setTimeout(() => executarSincronizacao(), 1000);
+            // }
+        }
+        
+        // Salvar dados apenas localmente
+        function saveDataLocal() {
+            try {
+                localStorage.setItem('cronogramaData', JSON.stringify(cronogramaData));
+                localStorage.setItem('cronogramaHistorico', JSON.stringify(historicoData));
+                localStorage.setItem('postosTrabalhoGlobais', JSON.stringify(postosTrabalhoGlobais));
+                console.log('💾 Dados salvos localmente');
+            } catch (error) {
+                console.error('❌ Erro ao salvar dados localmente:', error);
+            }
+        }
+        
+        // ====== FIM DO SISTEMA HÍBRIDO ======
+        function loadData() {
+            try {
+                console.log('📂 Carregando dados do localStorage...');
+                
+                const data = localStorage.getItem('cronogramaData');
+                const historico = localStorage.getItem('cronogramaHistorico');
+                const postos = localStorage.getItem('postosTrabalhoGlobais');
+                
+                // Carregar cronogramaData
+                if (data) {
+                    cronogramaData = JSON.parse(data);
+                    console.log('✅ Cronograma carregado:', cronogramaData.length, 'itens');
+                } else {
+                    cronogramaData = [];
+                    console.log('ℹ️ Nenhum dado de cronograma encontrado - iniciando vazio');
+                }
+                
+                // Carregar historicoData
+                if (historico) {
+                    historicoData = JSON.parse(historico);
+                    console.log('✅ Histórico carregado:', historicoData.length, 'registros');
+                } else {
+                    historicoData = [];
+                    console.log('ℹ️ Nenhum histórico encontrado - iniciando vazio');
+                }
+                
+                // Garantir que todos os itens tenham as propriedades necessárias
+                cronogramaData.forEach((item, index) => {
+                    // Se não tem propriedade frequencia, adicionar
+                    if (!item.hasOwnProperty('frequencia')) {
+                        item.frequencia = '';
+                    }
+                    // Se não tem subitens, adicionar array vazio
+                    if (!item.subitens) {
+                        item.subitens = [];
+                    }
+                    // Se não tem postosTrabalho, adicionar array vazio
+                    if (!item.postosTrabalho) {
+                        item.postosTrabalho = [];
+                    }
+                    console.log(`📋 Item ${index + 1}: "${item.name}" - ${item.subitens.length} subitens, ${item.postosTrabalho.length} postos`);
+                });
+                
+                // Carregar postos globais
+                if (postos) {
+                    const postosSalvos = JSON.parse(postos);
+                    if (postosSalvos.length > 0) {
+                        postosTrabalhoGlobais = postosSalvos;
+                        console.log('✅ Postos globais carregados:', postosTrabalhoGlobais.length, 'postos');
+                    }
+                } else {
+                    console.log('ℹ️ Usando postos globais iniciais:', postosTrabalhoGlobais.length, 'postos');
+                }
+                
+                console.log('📊 Resumo final:');
+                console.log('  - Itens:', cronogramaData.length);
+                console.log('  - Histórico:', historicoData.length);
+                console.log('  - Postos globais:', postosTrabalhoGlobais.length);
+                
+                // Renderizar interface
+                renderItems();
+                showAlert('✅ Dados carregados com sucesso!', 'success');
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar dados:', error);
+                showAlert('❌ Erro ao carregar dados: ' + error.message, 'danger');
+                
+                // Em caso de erro, inicializar com arrays vazios
+                cronogramaData = [];
+                historicoData = [];
+                renderItems();
+            }
+        }
+
+        // Salvar dados (versão simplificada e robusta)
+        function saveData() {
+            try {
+                console.log('💾 Salvando dados...');
+                console.log('📊 Cronograma Data:', cronogramaData.length, 'itens');
+                console.log('📝 Histórico Data:', historicoData.length, 'registros');
+                console.log('📍 Postos Globais:', postosTrabalhoGlobais.length, 'postos');
+                
+                localStorage.setItem('cronogramaData', JSON.stringify(cronogramaData));
+                localStorage.setItem('cronogramaHistorico', JSON.stringify(historicoData));
+                localStorage.setItem('postosTrabalhoGlobais', JSON.stringify(postosTrabalhoGlobais));
+                
+                console.log('✅ Dados salvos com sucesso no localStorage');
+                return true;
+            } catch (error) {
+                console.error('❌ Erro ao salvar dados:', error);
+                showAlert('Erro ao salvar dados: ' + error.message, 'danger');
+                return false;
+            }
+        }
+
+        // Adicionar item principal
+        function addMainItem() {
+            const nameInput = document.getElementById('newItemName');
+            const frequenciaInput = document.getElementById('newItemFrequencia');
+            const name = nameInput.value.trim();
+            const frequencia = frequenciaInput.value.trim();
+            
+            if (!name) {
+                showAlert('Por favor, digite o nome do item', 'warning');
+                return;
+            }
+            
+            const newItem = {
+                id: Date.now() + Math.random(),
+                name: name,
+                frequencia: frequencia && frequencia !== '' ? parseInt(frequencia) : '', // Frequência da tarefa principal
+                subitens: [] // Lista de subitens
+            };
+            
+            cronogramaData.push(newItem);
+            nameInput.value = '';
+            frequenciaInput.value = '';
+            renderItems();
+            saveData();
+            showAlert('Item adicionado com sucesso!', 'success');
+        }
+
+        // Editar frequência de um item
+        function editItemFrequencia(itemId) {
+            const item = cronogramaData.find(item => item.id === itemId);
+            if (!item) return;
+            
+            // Garantir que a propriedade frequencia existe
+            if (!item.hasOwnProperty('frequencia')) {
+                item.frequencia = '';
+            }
+            
+            const frequenciaAtual = item.frequencia || '';
+            const novaFrequencia = prompt(`Editar frequência para "${item.name}":\n\nDigite a nova frequência em dias (deixe vazio para remover):`, frequenciaAtual);
+            
+            // Se o usuário cancelou, não fazer nada
+            if (novaFrequencia === null) return;
+            
+            // Validar entrada
+            if (novaFrequencia.trim() === '') {
+                item.frequencia = '';
+            } else {
+                const freq = parseInt(novaFrequencia.trim());
+                if (isNaN(freq) || freq <= 0) {
+                    showAlert('Por favor, digite um número válido maior que zero para a frequência', 'warning');
+                    return;
+                }
+                item.frequencia = freq;
+            }
+            
+            renderItems();
+            saveData();
+            showAlert('Frequência atualizada com sucesso!', 'success');
+        }
+
+        // Editar nome de um item
+        function editItemNome(itemId) {
+            const item = cronogramaData.find(item => item.id === itemId);
+            if (!item) return;
+            
+            const novoNome = prompt(`Editar nome do item:\n\nDigite o novo nome:`, item.name);
+            
+            // Se o usuário cancelou, não fazer nada
+            if (novoNome === null) return;
+            
+            // Validar entrada
+            if (novoNome.trim() === '') {
+                showAlert('O nome do item não pode estar vazio', 'warning');
+                return;
+            }
+            
+            item.name = novoNome.trim();
+            renderItems();
+            saveData();
+            showAlert('Nome do item atualizado com sucesso!', 'success');
+        }
+
+        // Remover item principal
+        function removeMainItem(itemId) {
+            if (confirm('Tem certeza que deseja remover este item e todos os seus subitens?')) {
+                cronogramaData = cronogramaData.filter(item => item.id !== itemId);
+                renderItems();
+                saveData();
+                showAlert('Item removido com sucesso!', 'success');
+            }
+        }
+
+        // Remover posto de trabalho global
+        function removePostoTrabalhoGlobal(postoIdOuNome) {
+            if (confirm('Tem certeza que deseja remover este posto de trabalho?')) {
+                // Verificar se é ID ou nome
+                if (typeof postoIdOuNome === 'string') {
+                    // É um nome
+                    postosTrabalhoGlobais = postosTrabalhoGlobais.filter(posto => posto.nome !== postoIdOuNome);
+                } else {
+                    // É um ID
+                    postosTrabalhoGlobais = postosTrabalhoGlobais.filter(posto => posto.id !== postoIdOuNome);
+                }
+                renderPostosGlobais();
+                renderItems(); // Atualizar os itens também
+                saveData();
+                showAlert('Posto de trabalho removido com sucesso!', 'success');
+            }
+        }
+        
+        // Renderizar lista de postos globais
+        function renderPostosGlobais() {
+            const container = document.getElementById('postosGlobaisList');
+            const contador = document.getElementById('totalPostosGlobais');
+            
+            if (!container) return;
+            
+            // Atualizar contador
+            if (contador) {
+                contador.textContent = postosTrabalhoGlobais.length;
+            }
+            
+            if (postosTrabalhoGlobais.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-briefcase fa-2x mb-2"></i>
+                        <p>Nenhum posto de trabalho cadastrado</p>
+                        <small>Adicione postos de trabalho para poder atribuí-los aos subitens</small>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = postosTrabalhoGlobais.map(posto => `
+                <div class="posto-global-item">
+                    <div class="posto-info">
+                        <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                        <span>${posto.nome}</span>
+                    </div>
+                    <button class="btn btn-outline-danger btn-sm" onclick="removePostoTrabalhoGlobal(${posto.id})" title="Remover posto">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Lidar com seleção no dropdown de postos
+        function handlePostoSelection(itemId) {
+            const select = document.getElementById(`posto-${itemId}`);
+            const newPostoField = document.getElementById(`newPostoField-${itemId}`);
+            
+            if (select.value === '__criar_novo__') {
+                // Mostrar campo para criar novo posto
+                newPostoField.style.display = 'block';
+                document.getElementById(`newPostoInput-${itemId}`).focus();
+                select.value = ''; // Reset select
+            } else {
+                // Esconder campo se mostrado
+                newPostoField.style.display = 'none';
+            }
+        }
+
+        // Criar novo posto de trabalho
+        function createNewPosto(itemId) {
+            const input = document.getElementById(`newPostoInput-${itemId}`);
+            const nome = input.value.trim();
+            
+            if (!nome) {
+                showAlert('Por favor, digite o nome do posto de trabalho', 'warning');
+                return;
+            }
+            
+            // Verificar se já existe
+            if (postosTrabalhoGlobais.some(posto => posto.nome.toLowerCase() === nome.toLowerCase())) {
+                showAlert('Este posto de trabalho já existe!', 'warning');
+                return;
+            }
+            
+            // Adicionar ao array global
+            const novoId = postosTrabalhoGlobais.length > 0 ? Math.max(...postosTrabalhoGlobais.map(p => p.id)) + 1 : 1;
+            postosTrabalhoGlobais.push({ id: novoId, nome: nome });
+            
+            // Atualizar interface
+            renderItems();
+            saveData();
+            showAlert('Posto de trabalho adicionado com sucesso!', 'success');
+            
+            // Selecionar o novo posto automaticamente
+            setTimeout(() => {
+                const select = document.getElementById(`posto-${itemId}`);
+                if (select) {
+                    select.value = nome;
+                }
+            }, 100);
+        }
+
+        // Cancelar criação de novo posto
+        function cancelNewPosto(itemId) {
+            const newPostoField = document.getElementById(`newPostoField-${itemId}`);
+            const input = document.getElementById(`newPostoInput-${itemId}`);
+            
+            newPostoField.style.display = 'none';
+            input.value = '';
+        }
+
+        // Adicionar subitem - Versão robusta
+        function addSubitem(itemId) {
+            console.log('🔄 === INICIANDO ADIÇÃO DE SUBITEM ===');
+            console.log('📋 Item ID:', itemId);
+            
+            const nameInput = document.getElementById(`subitem-${itemId}`);
+            const postoSelect = document.getElementById(`posto-${itemId}`);
+            
+            if (!nameInput) {
+                console.error('❌ Input de nome não encontrado para item:', itemId);
+                showAlert('❌ Erro: Campo de nome não encontrado', 'danger');
+                return;
+            }
+            
+            const name = nameInput.value.trim();
+            const postoSelecionado = postoSelect ? postoSelect.value : '';
+            
+            console.log('📝 Nome do subitem:', name);
+            console.log('📍 Posto selecionado:', postoSelecionado);
+            
+            if (!name) {
+                showAlert('⚠️ Por favor, digite o nome do subitem', 'warning');
+                nameInput.focus();
+                return;
+            }
+            
+            // Buscar o item
+            const item = cronogramaData.find(item => item.id === itemId);
+            if (!item) {
+                console.error('❌ Item não encontrado:', itemId);
+                console.log('📊 CronogramaData atual:', cronogramaData);
+                showAlert('❌ Erro: Item principal não encontrado', 'danger');
+                return;
+            }
+            
+            console.log('✅ Item encontrado:', item.name);
+            console.log('📊 Subitens antes da adição:', item.subitens ? item.subitens.length : 'undefined');
+            
+            // Garantir que o array de subitens existe
+            if (!item.subitens) {
+                item.subitens = [];
+                console.log('🔧 Array de subitens criado');
+            }
+            
+            // Criar novo subitem
+            const novoSubitem = {
+                id: Date.now() + Math.random() * 1000,
+                nome: name,
+                status: 'Pendente',
+                date: '',
+                observations: '',
+                postoTrabalho: postoSelecionado || 'N/A',
+                proximoPrazo: ''
+            };
+            
+            console.log('➕ Novo subitem criado:', novoSubitem);
+            
+            // Adicionar ao array
+            item.subitens.push(novoSubitem);
+            
+            console.log('📊 Subitens após adição:', item.subitens.length);
+            console.log('📋 Lista de subitens:', item.subitens.map(s => s.nome));
+            
+            // Limpar campos
+            nameInput.value = '';
+            if (postoSelect) postoSelect.value = '';
+            
+            // Salvar dados IMEDIATAMENTE
+            const salvouOk = saveData();
+            if (!salvouOk) {
+                console.error('❌ Falha ao salvar - revertendo');
+                item.subitens.pop(); // Remover o subitem que acabou de ser adicionado
+                showAlert('❌ Erro ao salvar subitem', 'danger');
+                return;
+            }
+            
+            console.log('💾 Dados salvos com sucesso');
+            
+            // Atualizar interface
+            try {
+                renderItems();
+                console.log('🎨 Interface atualizada');
+                showAlert('✅ Subitem adicionado com sucesso!', 'success');
+            } catch (error) {
+                console.error('❌ Erro ao atualizar interface:', error);
+                showAlert('⚠️ Subitem salvo, mas erro na interface. Recarregue a página.', 'warning');
+            }
+            
+            console.log('🔄 === ADIÇÃO DE SUBITEM CONCLUÍDA ===');
+        }
+
+        // Concluir subitem
+        function concluirSubitem(itemId, subitemId) {
+            const item = cronogramaData.find(item => item.id === itemId);
+            const subitem = item ? item.subitens.find(sub => sub.id === subitemId) : null;
+            
+            if (!item || !subitem) {
+                showAlert('Erro: Item não encontrado!', 'danger');
+                return;
+            }
+            
+            const hoje = new Date();
+            // Criar data formatada no fuso horário local, não UTC
+            const hojeFormatado = hoje.getFullYear() + '-' + 
+                                 String(hoje.getMonth() + 1).padStart(2, '0') + '-' + 
+                                 String(hoje.getDate()).padStart(2, '0');
+            
+            console.log('Data atual:', hoje);
+            console.log('Data formatada:', hojeFormatado);
+            
+            // Preparar mensagem baseada na frequência
+            let mensagem = `Confirmar conclusão da tarefa "${subitem.nome}"?\n\nData de execução: ${formatDate(hojeFormatado)}`;
+            
+            if (item.frequencia && !isNaN(item.frequencia)) {
+                const proximoPrazo = new Date(hojeFormatado);
+                proximoPrazo.setDate(proximoPrazo.getDate() + parseInt(item.frequencia));
+                mensagem += `\n\n🔄 Próximo prazo: ${formatDate(dateToString(proximoPrazo))}`;
+                mensagem += `\n📋 Status ficará: "Em Andamento"`;
+            } else {
+                mensagem += `\n\n✅ Status ficará: "Concluído" (sem próximo prazo)`;
+            }
+            
+            // Confirmar conclusão
+            if (confirm(mensagem)) {
+                // Salvar no histórico antes de atualizar o subitem
+                salvarNoHistorico(item, subitem, hojeFormatado);
+                
+                // Atualizar data de execução
+                subitem.date = hojeFormatado;
+                
+                // Calcular próximo prazo se há frequência definida
+                if (item.frequencia && !isNaN(item.frequencia)) {
+                    const dataExecucao = new Date(hojeFormatado);
+                    const proximoPrazo = new Date(dataExecucao);
+                    proximoPrazo.setDate(proximoPrazo.getDate() + parseInt(item.frequencia));
+                    subitem.proximoPrazo = dateToString(proximoPrazo);
+                    
+                    // Se há frequência definida, colocar em "Em Andamento" para o próximo ciclo
+                    subitem.status = 'Em Andamento';
+                } else {
+                    // Se não há frequência, marcar como "Concluído" definitivamente
+                    subitem.status = 'Concluído';
+                    subitem.proximoPrazo = '';
+                }
+                
+                renderItems();
+                saveData();
+                
+                // Mensagem de sucesso baseada no que aconteceu
+                if (item.frequencia && !isNaN(item.frequencia)) {
+                    showAlert('✅ Tarefa concluída! Próximo prazo calculado e status alterado para "Em Andamento".', 'success');
+                } else {
+                    showAlert('✅ Tarefa concluída definitivamente!', 'success');
+                }
+            }
+        }
+
+        // Remover subitem
+        function removeSubitem(itemId, subitemId) {
+            if (confirm('Tem certeza que deseja remover este subitem?')) {
+                const item = cronogramaData.find(item => item.id === itemId);
+                if (item) {
+                    item.subitens = item.subitens.filter(subitem => subitem.id !== subitemId);
+                    renderItems();
+                    saveData();
+                    showAlert('Subitem removido com sucesso!', 'success');
+                }
+            }
+        }
+
+        // Editar subitem
+        function editSubitem(itemId, subitemId) {
+            const item = cronogramaData.find(item => item.id === itemId);
+            const subitem = item.subitens.find(s => s.id === subitemId);
+            
+            if (subitem) {
+                document.getElementById('editItemId').value = itemId;
+                document.getElementById('editSubitemId').value = subitemId;
+                document.getElementById('editSubitemName').value = subitem.nome;
+                document.getElementById('editSubitemStatus').value = subitem.status;
+                document.getElementById('editSubitemObservations').value = subitem.observations || '';
+                document.getElementById('editSubitemProximoPrazo').value = subitem.proximoPrazo || '';
+                
+                // Preencher select de postos com os postos globais
+                const postoSelect = document.getElementById('editSubitemPostoTrabalho');
+                postoSelect.innerHTML = '<option value="">Selecione um posto...</option>';
+                
+                if (postosTrabalhoGlobais && postosTrabalhoGlobais.length > 0) {
+                    postosTrabalhoGlobais.forEach(posto => {
+                        const option = document.createElement('option');
+                        option.value = posto.nome;
+                        option.textContent = posto.nome;
+                        if (subitem.postoTrabalho === posto.nome) {
+                            option.selected = true;
+                        }
+                        postoSelect.appendChild(option);
+                    });
+                }
+                
+                editModal.show();
+            }
+        }
+
+        // Salvar edições do subitem
+        function saveSubitem() {
+            const itemId = parseFloat(document.getElementById('editItemId').value);
+            const subitemId = parseFloat(document.getElementById('editSubitemId').value);
+            const nome = document.getElementById('editSubitemName').value.trim();
+            const status = document.getElementById('editSubitemStatus').value;
+            const observations = document.getElementById('editSubitemObservations').value.trim();
+            const postoTrabalho = document.getElementById('editSubitemPostoTrabalho').value;
+            
+            if (!nome) {
+                showAlert('Nome do subitem é obrigatório', 'warning');
+                return;
+            }
+            
+            const item = cronogramaData.find(item => item.id === itemId);
+            const subitem = item.subitens.find(s => s.id === subitemId);
+            
+            if (subitem) {
+                // Se status é "Descartado", confirmar remoção
+                if (status === 'Descartado') {
+                    if (confirm(`⚠️ ATENÇÃO: O item "${nome}" será REMOVIDO PERMANENTEMENTE!\n\nTem certeza que deseja descartar este item?`)) {
+                        
+                        // REGISTRAR DESCARTE NO HISTÓRICO ANTES DE REMOVER
+                        const hoje = getCurrentDateString();
+                        const registroDescarte = {
+                            id: Date.now() + Math.random(),
+                            tarefaPrincipal: item.name,
+                            subitem: subitem.nome,
+                            postoTrabalho: subitem.postoTrabalho || 'N/A',
+                            dataExecucao: hoje,
+                            frequencia: item.frequencia || 'N/A',
+                            proximoPrazo: subitem.proximoPrazo || 'N/A',
+                            observacoes: `🗑️ ITEM DESCARTADO - ${observations || 'Sem observações adicionais'}`,
+                            tipoAcao: 'DESCARTE' // Identificador especial para descartes
+                        };
+                        
+                        historicoData.push(registroDescarte);
+                        console.log('Descarte registrado no histórico:', registroDescarte);
+                        
+                        // Remover o subitem da lista
+                        item.subitens = item.subitens.filter(s => s.id !== subitemId);
+                        
+                        editModal.hide();
+                        renderItems();
+                        saveData();
+                        showAlert('Item descartado e registrado no histórico para rastreabilidade!', 'info');
+                        return;
+                    } else {
+                        // Se cancelou, voltar ao status anterior
+                        document.getElementById('editSubitemStatus').value = subitem.status;
+                        verificarStatusDescartado();
+                        return;
+                    }
+                }
+                
+                // Lógica para status Segregado
+                const statusAnterior = subitem.status;
+                if (status === 'Segregado' && statusAnterior !== 'Segregado') {
+                    // Pausar prazo - salvar data de segregação
+                    subitem.dataSegregacao = getCurrentDateString();
+                    subitem.proximoPrazoPausado = subitem.proximoPrazo; // Backup do prazo original
+                } else if (statusAnterior === 'Segregado' && status === 'Em Andamento') {
+                    // Retomar prazo - calcular novo prazo baseado no tempo pausado
+                    if (subitem.dataSegregacao && subitem.proximoPrazoPausado) {
+                        const hoje = new Date();
+                        const dataSegregacao = new Date(subitem.dataSegregacao);
+                        const diasPausados = Math.floor((hoje - dataSegregacao) / (1000 * 60 * 60 * 24));
+                        
+                        // Adicionar os dias pausados ao prazo original
+                        const prazoOriginal = new Date(subitem.proximoPrazoPausado);
+                        prazoOriginal.setDate(prazoOriginal.getDate() + diasPausados);
+                        subitem.proximoPrazo = dateToString(prazoOriginal);
+                        
+                        // Limpar dados de segregação
+                        delete subitem.dataSegregacao;
+                        delete subitem.proximoPrazoPausado;
+                    }
+                }
+                
+                subitem.nome = nome;
+                subitem.status = status;
+                subitem.observations = observations;
+                subitem.postoTrabalho = postoTrabalho || 'N/A'; // Salvar posto de trabalho
+                // Data de execução só é alterada pelo botão de conclusão
+                
+                editModal.hide();
+                renderItems();
+                saveData();
+                showAlert('Subitem atualizado com sucesso!', 'success');
+            }
+        }
+
+        // Toggle expansão da lista de postos
+        function togglePostosList(itemId) {
+            const lista = document.getElementById(`postosList-${itemId}`);
+            const icon = document.getElementById(`postosIcon-${itemId}`);
+            
+            if (!lista || !icon) return;
+            
+            if (lista.style.display === 'none') {
+                lista.style.display = 'block';
+                icon.style.transform = 'rotate(180deg)';
+                icon.style.transition = 'transform 0.2s';
+            } else {
+                lista.style.display = 'none';
+                icon.style.transform = 'rotate(0deg)';
+                icon.style.transition = 'transform 0.2s';
+            }
+        }
+
+        // Toggle expansão do item
+        function toggleItem(itemId) {
+            const container = document.getElementById(`subitems-${itemId}`);
+            const icon = document.querySelector(`[onclick="toggleItem(${itemId})"] .collapse-icon`);
+            
+            if (container.classList.contains('expanded')) {
+                container.classList.remove('expanded');
+                icon.style.transform = 'rotate(-90deg)';
+            } else {
+                container.classList.add('expanded');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Verificar se status descartado foi selecionado
+        function verificarStatusDescartado() {
+            const status = document.getElementById('editSubitemStatus').value;
+            const alertDescartado = document.getElementById('alertDescartado');
+            const alertSegregado = document.getElementById('alertSegregado');
+            
+            // Reset alerts
+            alertDescartado.style.display = 'none';
+            alertSegregado.style.display = 'none';
+            
+            if (status === 'Descartado') {
+                alertDescartado.style.display = 'block';
+            } else if (status === 'Segregado') {
+                alertSegregado.style.display = 'block';
+            }
+        }
+
+        // Analisar status geral do item principal baseado nos subitens e frequência
+        function getItemStatus(item) {
+            if (!item.subitens || item.subitens.length === 0) {
+                // Se item tem frequência definida mas não tem subitens, pode indicar atenção
+                if (item.frequencia && !isNaN(item.frequencia) && parseInt(item.frequencia) > 0) {
+                    return { 
+                        cor: 'amarela',
+                        classe: 'item-status-proximo', 
+                        temSegregado: false,
+                        prioridade: 2
+                    };
+                }
+                return { 
+                    cor: 'verde',
+                    classe: 'item-status-ok', 
+                    temSegregado: false,
+                    prioridade: 1
+                };
+            }
+            
+            let temVencido = false;
+            let temProximo = false;
+            let temSegregado = false;
+            
+            item.subitens.forEach(subitem => {
+                // Verificar se tem item segregado
+                if (subitem.status === 'Segregado') {
+                    temSegregado = true;
+                }
+                
+                // Verificar status de prazo apenas para itens ativos
+                if (subitem.proximoPrazo && subitem.status !== 'Segregado' && subitem.status !== 'Concluído') {
+                    const hoje = new Date();
+                    const prazo = new Date(subitem.proximoPrazo);
+                    const diffTime = prazo.getTime() - hoje.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays < 0) {
+                        temVencido = true;
+                    } else if (diffDays <= 7) {
+                        temProximo = true;
+                    }
+                }
+            });
+            
+            // Determinar cor por prioridade (vermelho > amarelo > verde)
+            if (temVencido) {
+                return { 
+                    cor: 'vermelha', 
+                    classe: 'item-status-vencido', 
+                    temSegregado: temSegregado,
+                    prioridade: 3
+                };
+            } else if (temProximo) {
+                return { 
+                    cor: 'amarela', 
+                    classe: 'item-status-proximo', 
+                    temSegregado: temSegregado,
+                    prioridade: 2
+                };
+            } else {
+                return { 
+                    cor: 'verde', 
+                    classe: 'item-status-ok', 
+                    temSegregado: temSegregado,
+                    prioridade: 1
+                };
+            }
+        }
+
+        // Função para filtrar itens por status
+        function filterItemsByStatus() {
+            console.log('Filtro acionado!');
+            try {
+                const filtroElement = document.querySelector('input[name="statusFilter"]:checked');
+                if (!filtroElement) {
+                    console.error('Nenhum filtro selecionado');
+                    return;
+                }
+                
+                const filtro = filtroElement.value;
+                console.log('Filtro selecionado:', filtro);
+                
+                const itens = document.querySelectorAll('.item-card');
+                console.log('Itens encontrados:', itens.length);
+                console.log('CronogramaData length:', cronogramaData.length);
+
+                itens.forEach((item, index) => {
+                    if (index >= cronogramaData.length) {
+                        console.warn('Índice fora do range:', index, 'de', cronogramaData.length);
+                        return;
+                    }
+                    
+                    let mostrar = false;
+                    const itemData = cronogramaData[index];
+                    console.log('Processando item:', itemData?.name);
+                    
+                    if (!itemData) {
+                        console.warn('Item não encontrado no índice:', index);
+                        return;
+                    }
+                    
+                    const status = getItemStatus(itemData);
+                    console.log('Status do item:', status);
+
+                    switch (filtro) {
+                        case 'todos':
+                            mostrar = true;
+                            break;
+                        case 'verde':
+                            mostrar = status.cor === 'verde';
+                            break;
+                        case 'amarela':
+                            mostrar = status.cor === 'amarela';
+                            break;
+                        case 'vermelha':
+                            mostrar = status.cor === 'vermelha';
+                            break;
+                        case 'segregados':
+                            mostrar = status.temSegregado;
+                            break;
+                    }
+
+                    console.log('Item', itemData.name, 'será', mostrar ? 'mostrado' : 'ocultado');
+                    item.style.display = mostrar ? 'block' : 'none';
+                });
+
+                // Atualizar contadores nos botões
+                updateFilterCounters();
+                console.log('Filtro aplicado com sucesso!');
+            } catch (error) {
+                console.error('Erro no filtro:', error);
+                showAlert('Erro ao aplicar filtro: ' + error.message, 'danger');
+            }
+        }
+
+        // Função para atualizar contadores nos filtros
+        function updateFilterCounters() {
+            console.log('Atualizando contadores...');
+            try {
+                const contadores = {
+                    todos: 0,
+                    verde: 0,
+                    amarela: 0,
+                    vermelha: 0,
+                    segregados: 0
+                };
+
+                cronogramaData.forEach(item => {
+                    contadores.todos++;
+                    const status = getItemStatus(item);
+
+                    switch (status.cor) {
+                        case 'verde':
+                            contadores.verde++;
+                            break;
+                        case 'amarela':
+                            contadores.amarela++;
+                            break;
+                        case 'vermelha':
+                            contadores.vermelha++;
+                            break;
+                    }
+
+                    if (status.temSegregado) {
+                        contadores.segregados++;
+                    }
+                });
+
+                console.log('Contadores calculados:', contadores);
+
+                // Atualizar textos dos labels com contadores
+                const labelTodos = document.querySelector('label[for="filterAll"]');
+                const labelOk = document.querySelector('label[for="filterOk"]');
+                const labelWarning = document.querySelector('label[for="filterWarning"]');
+                const labelDanger = document.querySelector('label[for="filterDanger"]');
+                const labelSegregated = document.querySelector('label[for="filterSegregated"]');
+
+                if (labelTodos) {
+                    labelTodos.innerHTML = `
+                        <i class="fas fa-list me-1"></i>
+                        Todos <span class="badge bg-secondary ms-1">${contadores.todos}</span>
+                    `;
+                }
+
+                if (labelOk) {
+                    labelOk.innerHTML = `
+                        <i class="fas fa-check-circle me-1"></i>
+                        OK <span class="badge bg-success ms-1">${contadores.verde}</span>
+                    `;
+                }
+
+                if (labelWarning) {
+                    labelWarning.innerHTML = `
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Próximos <span class="badge bg-warning ms-1">${contadores.amarela}</span>
+                    `;
+                }
+
+                if (labelDanger) {
+                    labelDanger.innerHTML = `
+                        <i class="fas fa-times-circle me-1"></i>
+                        Atrasados <span class="badge bg-danger ms-1">${contadores.vermelha}</span>
+                    `;
+                }
+
+                if (labelSegregated) {
+                    labelSegregated.innerHTML = `
+                        <i class="fas fa-tools me-1"></i>
+                        Segregados <span class="badge bg-info ms-1">${contadores.segregados}</span>
+                    `;
+                }
+
+                console.log('Contadores atualizados com sucesso!');
+            } catch (error) {
+                console.error('Erro ao atualizar contadores:', error);
+            }
+        }
+
+        // Função para verificar status do prazo
+        function getStatusPrazo(proximoPrazo, status) {
+            if (!proximoPrazo) return { classe: '', texto: '' };
+            
+            // Se item está segregado, mostrar status pausado
+            if (status === 'Segregado') {
+                return { classe: 'prazo-pausado', texto: 'Prazo pausado' };
+            }
+            
+            const hoje = new Date();
+            const prazo = new Date(proximoPrazo);
+            const diffTime = prazo.getTime() - hoje.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) {
+                return { classe: 'prazo-vencido', texto: `Vencido há ${Math.abs(diffDays)} dias` };
+            } else if (diffDays <= 7) {
+                return { classe: 'prazo-proximo', texto: `Vence em ${diffDays} dias` };
+            } else {
+                return { classe: 'prazo-ok', texto: `Vence em ${diffDays} dias` };
+            }
+        }
+
+        // Função para obter classe CSS do item baseado no prazo
+        function getClasseItemPrazo(proximoPrazo, status) {
+            if (!proximoPrazo) return '';
+            
+            // Se item está segregado, não destacar por prazo
+            if (status === 'Segregado') return 'segregado';
+            
+            const hoje = new Date();
+            const prazo = new Date(proximoPrazo);
+            const diffTime = prazo.getTime() - hoje.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) {
+                return 'vencido';
+            } else if (diffDays <= 7) {
+                return 'proximo-vencimento';
+            }
+            return '';
+        }
+
+        // Salvar conclusão no histórico
+        function salvarNoHistorico(item, subitem, dataExecucao) {
+            const registroHistorico = {
+                id: Date.now() + Math.random(),
+                tarefaPrincipal: item.name,
+                subitem: subitem.nome,
+                postoTrabalho: subitem.postoTrabalho || 'N/A', // Usar posto do subitem
+                dataExecucao: dataExecucao,
+                frequencia: item.frequencia || 'N/A',
+                proximoPrazo: subitem.proximoPrazo || 'N/A',
+                observacoes: subitem.observations || '',
+                tipoAcao: 'CONCLUSAO' // Identificar como conclusão
+            };
+            
+            historicoData.push(registroHistorico);
+            
+            // Manter apenas os últimos 1000 registros para evitar sobrecarga
+            if (historicoData.length > 1000) {
+                historicoData = historicoData.slice(-1000);
+            }
+        }
+
+        // Abrir modal do histórico - NOVA VERSÃO CUSTOMIZADA
+        function abrirHistorico() {
+            console.log('=== ABRINDO HISTÓRICO ===');
+            console.log('Estado inicial do historicoData:', historicoData);
+            console.log('Quantidade de registros:', historicoData ? historicoData.length : 0);
+            
+            // Verificar se há dados no localStorage
+            const dadosLocalStorage = localStorage.getItem('cronogramaHistorico');
+            console.log('Dados brutos do localStorage:', dadosLocalStorage);
+            
+            if (dadosLocalStorage) {
+                try {
+                    const dadosParsed = JSON.parse(dadosLocalStorage);
+                    console.log('Dados parseados do localStorage:', dadosParsed);
+                    
+                    if (Array.isArray(dadosParsed) && dadosParsed.length > 0) {
+                        historicoData = dadosParsed;
+                        console.log('historicoData atualizado com dados do localStorage');
+                    }
+                } catch (e) {
+                    console.error('Erro ao parsear dados do localStorage:', e);
+                }
+            }
+            
+            // CRIAR MODAL CUSTOMIZADO EM VEZ DE USAR BOOTSTRAP
+            criarModalCustomizado();
+        }
+        
+        // Criar modal customizado para histórico
+        function criarModalCustomizado() {
+            console.log('Criando modal customizado...');
+            
+            // Remover modal existente se houver
+            const modalExistente = document.getElementById('modalCustomizado');
+            if (modalExistente) {
+                modalExistente.remove();
+            }
+            
+            // Criar overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'modalCustomizado';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 10000;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding: 20px;
+            `;
+            
+            // Criar conteúdo do modal
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: white;
+                border-radius: 10px;
+                width: 90%;
+                max-width: 1200px;
+                max-height: 90%;
+                overflow-y: auto;
+                padding: 0;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            `;
+            
+            // Header do modal
+            const header = document.createElement('div');
+            header.style.cssText = `
+                background: #28a745;
+                color: white;
+                padding: 20px;
+                border-radius: 10px 10px 0 0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            `;
+            
+            header.innerHTML = `
+                <h4 style="margin: 0;">
+                    <i class="fas fa-history" style="margin-right: 10px;"></i>
+                    Histórico de Conclusões
+                </h4>
+                <button onclick="fecharModalCustomizado()" style="
+                    background: transparent;
+                    border: none;
+                    color: white;
+                    font-size: 24px;
+                    cursor: pointer;
+                    padding: 5px;
+                ">×</button>
+            `;
+            
+            // Body do modal
+            const body = document.createElement('div');
+            body.style.cssText = `
+                padding: 20px;
+            `;
+            
+            // Controles
+            const controles = document.createElement('div');
+            controles.style.cssText = `
+                margin-bottom: 20px;
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+            `;
+            
+            controles.innerHTML = `
+                <input type="text" 
+                       id="buscaCustomizada" 
+                       placeholder="🔍 Buscar por tarefa..."
+                       oninput="renderHistoricoCustomizado()"
+                       style="flex: 1; min-width: 200px; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                <select id="filtroTipoAcao" 
+                        onchange="renderHistoricoCustomizado()" 
+                        style="padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                    <option value="">📋 Todos os registros</option>
+                    <option value="CONCLUSAO">✅ Apenas conclusões</option>
+                    <option value="DESCARTE">🗑️ Apenas descartes</option>
+                </select>
+                <button onclick="exportarHistoricoCustomizado()" style="
+                    background: #28a745;
+                    color: white;
+                    border: none;
+                    padding: 8px 15px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                ">📊 Exportar Excel</button>
+            `;
+            
+            // Área de conteúdo
+            const conteudo = document.createElement('div');
+            conteudo.id = 'conteudoHistoricoCustomizado';
+            conteudo.style.cssText = `
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                padding: 20px;
+                min-height: 300px;
+            `;
+            
+            // Montar modal
+            body.appendChild(controles);
+            body.appendChild(conteudo);
+            modalContent.appendChild(header);
+            modalContent.appendChild(body);
+            overlay.appendChild(modalContent);
+            
+            // Adicionar ao DOM
+            document.body.appendChild(overlay);
+            
+            console.log('Modal customizado criado');
+            
+            // Renderizar conteúdo
+            renderHistoricoCustomizado();
+            
+            // Fechar modal ao clicar no overlay
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) {
+                    fecharModalCustomizado();
+                }
+            });
+            
+            // Fechar modal com ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    fecharModalCustomizado();
+                }
+            });
+        }
+        
+        // Fechar modal customizado
+        function fecharModalCustomizado() {
+            const modal = document.getElementById('modalCustomizado');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        // Renderizar histórico no modal customizado
+        function renderHistoricoCustomizado() {
+            console.log('Renderizando histórico customizado...');
+            const container = document.getElementById('conteudoHistoricoCustomizado');
+            
+            if (!container) {
+                console.error('Container customizado não encontrado!');
+                return;
+            }
+            
+            if (!historicoData || historicoData.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; color: #666; padding: 40px;">
+                        <i class="fas fa-history" style="font-size: 48px; margin-bottom: 20px; opacity: 0.3;"></i>
+                        <h4>Nenhum histórico encontrado</h4>
+                        <p>Conclua algumas tarefas para ver o histórico aqui.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Aplicar filtros
+            let dadosFiltrados = [...historicoData];
+            
+            // Filtro por busca
+            const busca = document.getElementById('buscaCustomizada')?.value;
+            if (busca && busca.trim()) {
+                dadosFiltrados = dadosFiltrados.filter(item => 
+                    item.tarefaPrincipal.toLowerCase().includes(busca.toLowerCase()) ||
+                    item.subitem.toLowerCase().includes(busca.toLowerCase())
+                );
+            }
+            
+            // Filtro por tipo de ação
+            const filtroTipo = document.getElementById('filtroTipoAcao')?.value;
+            if (filtroTipo) {
+                if (filtroTipo === 'DESCARTE') {
+                    dadosFiltrados = dadosFiltrados.filter(item => item.tipoAcao === 'DESCARTE');
+                } else if (filtroTipo === 'CONCLUSAO') {
+                    dadosFiltrados = dadosFiltrados.filter(item => item.tipoAcao !== 'DESCARTE');
+                }
+            }
+            
+            // Ordenar por data (mais recente primeiro)
+            const dadosOrdenados = dadosFiltrados.sort((a, b) => new Date(b.dataExecucao) - new Date(a.dataExecucao));
+            
+            // Estatísticas
+            const totalConclusoes = historicoData.filter(item => item.tipoAcao !== 'DESCARTE').length;
+            const totalDescartes = historicoData.filter(item => item.tipoAcao === 'DESCARTE').length;
+            
+            const estatisticas = `
+                <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <div style="background: #d4edda; padding: 10px 15px; border-radius: 5px; border-left: 4px solid #28a745;">
+                        <strong>✅ Conclusões:</strong> ${totalConclusoes}
+                    </div>
+                    <div style="background: #fff3cd; padding: 10px 15px; border-radius: 5px; border-left: 4px solid #ffc107;">
+                        <strong>🗑️ Descartes:</strong> ${totalDescartes}
+                    </div>
+                    <div style="background: #d1ecf1; padding: 10px 15px; border-radius: 5px; border-left: 4px solid #17a2b8;">
+                        <strong>📊 Total Geral:</strong> ${historicoData.length}
+                    </div>
+                    ${dadosFiltrados.length !== historicoData.length ? `
+                        <div style="background: #f8d7da; padding: 10px 15px; border-radius: 5px; border-left: 4px solid #dc3545;">
+                            <strong>🔍 Filtrados:</strong> ${dadosFiltrados.length}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            if (dadosOrdenados.length === 0) {
+                container.innerHTML = estatisticas + `
+                    <div style="text-align: center; color: #666; padding: 40px;">
+                        <i class="fas fa-search" style="font-size: 48px; margin-bottom: 20px; opacity: 0.3;"></i>
+                        <h4>Nenhum registro encontrado</h4>
+                        <p>Ajuste os filtros para ver os resultados.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const tabela = estatisticas + `
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                        <thead>
+                            <tr style="background: #f8f9fa;">
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Data</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Tarefa Principal</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Subitem</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Posto de Trabalho</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Frequência</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Próximo Prazo</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Observações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${dadosOrdenados.map((registro, index) => `
+                                <tr style="background: ${
+                                    registro.tipoAcao === 'DESCARTE' ? '#fff3cd' : 
+                                    index % 2 === 0 ? '#fff' : '#f8f9fa'
+                                };">
+                                    <td style="padding: 10px; border: 1px solid #ddd;">
+                                        <i class="fas ${registro.tipoAcao === 'DESCARTE' ? 'fa-trash' : 'fa-calendar-check'}" 
+                                           style="color: ${registro.tipoAcao === 'DESCARTE' ? '#dc3545' : '#28a745'}; margin-right: 5px;"></i>
+                                        ${formatDate(registro.dataExecucao)}
+                                    </td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">
+                                        ${registro.tarefaPrincipal}
+                                        ${registro.tipoAcao === 'DESCARTE' ? '<span style="color: #dc3545; font-size: 12px;"> [DESCARTADO]</span>' : ''}
+                                    </td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">
+                                        ${registro.subitem}
+                                    </td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">
+                                        <i class="fas fa-map-marker-alt" style="color: #1976d2; margin-right: 5px;"></i>
+                                        ${registro.postoTrabalho || 'N/A'}
+                                    </td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">
+                                        ${registro.frequencia !== 'N/A' ? `${registro.frequencia} dias` : 'N/A'}
+                                    </td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">
+                                        ${registro.proximoPrazo !== 'N/A' ? formatDate(registro.proximoPrazo) : 'N/A'}
+                                    </td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">
+                                        ${registro.observacoes || '-'}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div style="margin-top: 15px; text-align: center; color: #666;">
+                    <small>Mostrando ${dadosOrdenados.length} de ${historicoData.length} registros</small>
+                </div>
+            `;
+            
+            container.innerHTML = tabela;
+            console.log('Histórico customizado renderizado com sucesso!');
+        }
+        
+        // Exportar histórico customizado
+        function exportarHistoricoCustomizado() {
+            if (!historicoData || historicoData.length === 0) {
+                alert('⚠️ Não há dados no histórico para exportar!');
+                return;
+            }
+            
+            try {
+                const wb = XLSX.utils.book_new();
+                
+                // Converter dados para formato de planilha
+                const wsData = [];
+                wsData.push(['Data Execução', 'Tarefa Principal', 'Subitem', 'Posto de Trabalho', 'Frequência (dias)', 'Próximo Prazo', 'Observações', 'Tipo']);
+                
+                // Ordenar por data (mais recente primeiro)
+                const dadosOrdenados = [...historicoData].sort((a, b) => new Date(b.dataExecucao) - new Date(a.dataExecucao));
+                
+                dadosOrdenados.forEach(registro => {
+                    wsData.push([
+                        registro.dataExecucao,
+                        registro.tarefaPrincipal,
+                        registro.subitem,
+                        registro.postoTrabalho || 'N/A',
+                        registro.frequencia !== 'N/A' ? registro.frequencia : '',
+                        registro.proximoPrazo !== 'N/A' ? registro.proximoPrazo : '',
+                        registro.observacoes || '',
+                        registro.tipoAcao === 'DESCARTE' ? 'DESCARTE' : 'CONCLUSÃO'
+                    ]);
+                });
+                
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                XLSX.utils.book_append_sheet(wb, ws, 'Histórico');
+                
+                const fileName = `historico_conclusoes_${new Date().toISOString().split('T')[0]}.xlsx`;
+                XLSX.writeFile(wb, fileName);
+                
+                alert('✅ Histórico exportado com sucesso!');
+            } catch (error) {
+                console.error('Erro ao exportar:', error);
+                alert('❌ Erro ao exportar histórico: ' + error.message);
+            }
+        }
+
+        // Função de teste para o modal
+        function testeModal() {
+            console.log('=== TESTE DO MODAL ===');
+            const container = document.getElementById('historicoTabela');
+            console.log('Container encontrado:', container);
+            console.log('Container é visível?', container ? container.offsetHeight > 0 : 'Container não existe');
+            
+            // TESTE DIRETO NO BODY PARA VERIFICAR SE É PROBLEMA DO MODAL
+            const testeBody = document.createElement('div');
+            testeBody.id = 'teste-emergencia';
+            testeBody.style.cssText = `
+                position: fixed;
+                top: 50px;
+                left: 50px;
+                background: red;
+                color: white;
+                padding: 20px;
+                z-index: 9999;
+                border: 5px solid yellow;
+                font-size: 24px;
+                font-weight: bold;
+            `;
+            testeBody.innerHTML = '🚨 TESTE EMERGENCIAL - VOCÊ VÊ ISSO?';
+            document.body.appendChild(testeBody);
+            
+            console.log('Elemento de teste adicionado ao body');
+            
+            // Remover o teste após 3 segundos
+            setTimeout(() => {
+                const elementoTeste = document.getElementById('teste-emergencia');
+                if (elementoTeste) {
+                    elementoTeste.remove();
+                }
+            }, 3000);
+            
+            if (container) {
+                console.log('Inserindo conteúdo de teste no container...');
+                
+                // Teste super simples primeiro
+                container.innerHTML = '<h1 style="color: red; background: yellow; padding: 20px; z-index: 9999; position: relative;">🧪 TESTE - VOCÊ ESTÁ VENDO ISSO?</h1>';
+                
+                // Forçar o container a ser visível
+                container.style.cssText = `
+                    display: block !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                    z-index: 9999 !important;
+                    position: relative !important;
+                    background: white !important;
+                    border: 3px solid red !important;
+                    min-height: 200px !important;
+                `;
+                
+                console.log('Conteúdo de teste inserido e estilo forçado');
+                console.log('HTML do container após inserção:', container.innerHTML);
+                console.log('CSS do container:', container.style.cssText);
+                
+                // Verificar se o modal está sendo mostrado
+                const modal = document.getElementById('historicoModal');
+                console.log('Modal element:', modal);
+                console.log('Modal classes:', modal ? modal.className : 'Modal não encontrado');
+                console.log('Modal style:', modal ? modal.style.cssText : 'Modal não encontrado');
+                
+                // Adicionar mais conteúdo depois de 1 segundo para debug
+                setTimeout(() => {
+                    container.innerHTML += `
+                        <div style="background: lightblue; padding: 15px; margin: 10px 0; border: 2px solid blue;">
+                            <h3>🔍 Informações de Debug:</h3>
+                            <p><strong>localStorage cronogramaHistorico:</strong> ${localStorage.getItem('cronogramaHistorico') || 'null'}</p>
+                            <p><strong>historicoData length:</strong> ${historicoData ? historicoData.length : 'undefined'}</p>
+                            <p><strong>Data atual:</strong> ${new Date().toLocaleString()}</p>
+                            <button onclick="voltarParaHistoricoReal()" style="background: green; color: white; padding: 10px; border: none; margin: 5px;">
+                                ✅ Teste OK - Histórico Real
+                            </button>
+                            <button onclick="criarDadosTeste()" style="background: orange; color: white; padding: 10px; border: none; margin: 5px;">
+                                🧪 Criar Dados de Teste
+                            </button>
+                            <button onclick="fecharModalForçado()" style="background: red; color: white; padding: 10px; border: none; margin: 5px;">
+                                ❌ Fechar Modal
+                            </button>
+                        </div>
+                    `;
+                    console.log('Conteúdo adicional inserido');
+                }, 1000);
+                
+            } else {
+                console.error('Container não encontrado!');
+                alert('ERRO: Container historicoTabela não foi encontrado!');
+            }
+        }
+        
+        // Fechar modal forçadamente
+        function fecharModalForçado() {
+            const modal = document.getElementById('historicoModal');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.classList.remove('show');
+                // Remover backdrop se existir
+                const backdrop = document.querySelector('.modal-backdrop');
+                if (backdrop) {
+                    backdrop.remove();
+                }
+                document.body.classList.remove('modal-open');
+            }
+        }
+        
+        // Criar dados de teste
+        function criarDadosTeste() {
+            console.log('Criando dados de teste...');
+            historicoData = [
+                {
+                    id: 1,
+                    tarefaPrincipal: "Tarefa Teste 1",
+                    subitem: "Subitem Teste 1",
+                    dataExecucao: "2025-07-29",
+                    frequencia: "7",
+                    proximoPrazo: "2025-08-05",
+                    observacoes: "Observação de teste 1"
+                },
+                {
+                    id: 2,
+                    tarefaPrincipal: "Tarefa Teste 2", 
+                    subitem: "Subitem Teste 2",
+                    dataExecucao: "2025-07-28",
+                    frequencia: "N/A",
+                    proximoPrazo: "N/A",
+                    observacoes: "Observação de teste 2"
+                }
+            ];
+            
+            // Salvar no localStorage
+            localStorage.setItem('cronogramaHistorico', JSON.stringify(historicoData));
+            console.log('Dados de teste criados e salvos');
+            showAlert('Dados de teste criados! Agora teste o histórico real.', 'success');
+        }
+        
+        // Voltar para o histórico real
+        function voltarParaHistoricoReal() {
+            console.log('Voltando para histórico real...');
+            renderHistorico();
+        }
+
+        // Renderizar histórico
+        function renderHistorico(filtros = {}) {
+            console.log('Renderizando histórico...', historicoData);
+            const container = document.getElementById('historicoTabela');
+            console.log('Container encontrado:', container);
+            
+            if (!container) {
+                console.error('Container historicoTabela não encontrado!');
+                return;
+            }
+            
+            // Força uma mensagem de teste primeiro
+            container.innerHTML = `
+                <div class="text-center py-3">
+                    <h5>Carregando histórico...</h5>
+                </div>
+            `;
+            
+            if (!historicoData || historicoData.length === 0) {
+                console.log('Nenhum dado no histórico, mostrando mensagem vazia');
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhum histórico encontrado</h5>
+                        <p class="text-muted">Conclua algumas tarefas para ver o histórico aqui.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let dadosFiltrados = [...historicoData];
+            console.log('Dados antes do filtro:', dadosFiltrados);
+            
+            // Aplicar filtros
+            if (filtros.busca) {
+                dadosFiltrados = dadosFiltrados.filter(item => 
+                    item.tarefaPrincipal.toLowerCase().includes(filtros.busca.toLowerCase()) ||
+                    item.subitem.toLowerCase().includes(filtros.busca.toLowerCase())
+                );
+            }
+            
+            if (filtros.dataInicio) {
+                dadosFiltrados = dadosFiltrados.filter(item => item.dataExecucao >= filtros.dataInicio);
+            }
+            
+            if (filtros.dataFim) {
+                dadosFiltrados = dadosFiltrados.filter(item => item.dataExecucao <= filtros.dataFim);
+            }
+            
+            console.log('Dados após filtros:', dadosFiltrados);
+            
+            // Ordenar por data (mais recente primeiro)
+            dadosFiltrados.sort((a, b) => new Date(b.dataExecucao) - new Date(a.dataExecucao));
+            
+            // Gerar HTML linha por linha para debug
+            const linhasTabela = dadosFiltrados.map(registro => {
+                console.log('Processando registro:', registro);
+                return `
+                    <tr>
+                        <td>
+                            <i class="fas fa-calendar-check text-success me-1"></i>
+                            ${registro.dataExecucao || 'N/A'}
+                        </td>
+                        <td><strong>${registro.tarefaPrincipal || 'N/A'}</strong></td>
+                        <td>${registro.subitem || 'N/A'}</td>
+                        <td>
+                            ${registro.frequencia && registro.frequencia !== 'N/A' ? `${registro.frequencia} dias` : 'N/A'}
+                        </td>
+                        <td>
+                            ${registro.proximoPrazo && registro.proximoPrazo !== 'N/A' ? registro.proximoPrazo : 'N/A'}
+                        </td>
+                        <td>${registro.observacoes || '-'}</td>
+                    </tr>
+                `;
+            });
+            
+            const htmlTabela = `
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Data Execução</th>
+                            <th>Tarefa Principal</th>
+                            <th>Subitem</th>
+                            <th>Frequência</th>
+                            <th>Próximo Prazo</th>
+                            <th>Observações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${linhasTabela.join('')}
+                    </tbody>
+                </table>
+                
+                <div class="mt-3 text-muted">
+                    <small>Total de registros: ${dadosFiltrados.length}</small>
+                </div>
+            `;
+            
+            console.log('HTML final gerado, inserindo no container...');
+            console.log('Linhas geradas:', linhasTabela.length);
+            
+            // Usar setTimeout para garantir que o DOM está pronto
+            setTimeout(() => {
+                container.innerHTML = htmlTabela;
+                console.log('HTML inserido no container');
+                console.log('Container após inserção:', container.innerHTML.substring(0, 200));
+            }, 50);
+        }
+
+        // Filtrar histórico
+        function filtrarHistorico() {
+            const busca = document.getElementById('searchHistorico').value;
+            const dataInicio = document.getElementById('filtroDataInicio').value;
+            const dataFim = document.getElementById('filtroDataFim').value;
+            
+            renderHistorico({
+                busca: busca,
+                dataInicio: dataInicio,
+                dataFim: dataFim
+            });
+        }
+
+        // Limpar filtros
+        function limparFiltros() {
+            document.getElementById('searchHistorico').value = '';
+            document.getElementById('filtroDataInicio').value = '';
+            document.getElementById('filtroDataFim').value = '';
+            renderHistorico();
+        }
+
+        // Exportar histórico para Excel
+        function exportarHistorico() {
+            if (!historicoData || historicoData.length === 0) {
+                showAlert('Não há dados no histórico para exportar!', 'warning');
+                return;
+            }
+            
+            try {
+                const wb = XLSX.utils.book_new();
+                
+                // Converter dados para formato de planilha
+                const wsData = [];
+                wsData.push(['Data Execução', 'Tarefa Principal', 'Subitem', 'Frequência (dias)', 'Próximo Prazo', 'Observações']);
+                
+                // Ordenar por data (mais recente primeiro)
+                const dadosOrdenados = [...historicoData].sort((a, b) => new Date(b.dataExecucao) - new Date(a.dataExecucao));
+                
+                dadosOrdenados.forEach(registro => {
+                    wsData.push([
+                        registro.dataExecucao,
+                        registro.tarefaPrincipal,
+                        registro.subitem,
+                        registro.frequencia !== 'N/A' ? registro.frequencia : '',
+                        registro.proximoPrazo !== 'N/A' ? registro.proximoPrazo : '',
+                        registro.observacoes || ''
+                    ]);
+                });
+
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                XLSX.utils.book_append_sheet(wb, ws, 'Histórico');
+                
+                const today = new Date().toISOString().split('T')[0];
+                XLSX.writeFile(wb, `historico_cronograma_${today}.xlsx`);
+                
+                showAlert('Histórico exportado com sucesso!', 'success');
+            } catch (error) {
+                showAlert('Erro ao exportar histórico: ' + error.message, 'danger');
+            }
+        }
+
+        // Função para mostrar todos os subitens (substituindo showAllPostos)
+        function showAllSubitens(mainItemId) {
+            const mainItem = cronogramaData.find(item => item.id === mainItemId);
+            if (!mainItem) return;
+            
+            // Implementar se necessário futuramente
+            console.log('Ver todos subitens para:', mainItem.name);
+        }
+
+        // Renderizar todos os itens
+        function renderItems() {
+            const container = document.getElementById('itemsList');
+            
+            if (cronogramaData.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12">
+                        <div class="empty-state">
+                            <i class="fas fa-clipboard-list"></i>
+                            <h4>Nenhum item cadastrado</h4>
+                            <p>Adicione um item principal para começar a organizar seu cronograma</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = cronogramaData.map(item => {
+                const totalSubitens = item.subitens ? item.subitens.length : 0;
+                const statusItem = getItemStatus(item);
+                
+                return `
+                    <div class="col-lg-6 col-xl-4">
+                        <div class="item-card">
+                            <div class="item-header ${statusItem.classe}">
+                                <div onclick="toggleItem(${item.id})" style="flex: 1; cursor: pointer;">
+                                    <h5>
+                                        ${item.name}
+                                        ${statusItem.temSegregado ? '<i class="fas fa-tools alert-segregado" title="Item com subitens segregados"></i>' : ''}
+                                    </h5>
+                                    <div>
+                                        ${item.frequencia ? `<span class="badge bg-info me-2"><i class="fas fa-clock me-1"></i>${item.frequencia} dias</span>` : ''}
+                                        <span class="badge bg-light text-dark me-2">${totalSubitens} subitens</span>
+                                        ${item.postosTrabalho && item.postosTrabalho.length > 0 ? 
+                                            `<span class="badge bg-secondary me-2" title="Postos de Trabalho">
+                                                <i class="fas fa-map-marker-alt me-1"></i>${item.postosTrabalho.length} posto${item.postosTrabalho.length > 1 ? 's' : ''}
+                                            </span>` : ''
+                                        }
+                                        <i class="fas fa-chevron-down collapse-icon"></i>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 5px; margin-left: 10px;">
+                                    <button class="btn btn-outline-secondary btn-sm" 
+                                            onclick="event.stopPropagation(); editItemFrequencia(${item.id})" 
+                                            title="Editar frequência">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-light btn-sm" 
+                                            onclick="event.stopPropagation(); editItemNome(${item.id})" 
+                                            title="Editar nome do item">
+                                        <i class="fas fa-pen"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="item-content">
+                                <div class="subitems-container" id="subitems-${item.id}">
+                                    <div class="subitem-controls">
+                                        <div class="input-group input-group-sm mb-2">
+                                            <input type="text" 
+                                                   id="subitem-${item.id}" 
+                                                   class="form-control" 
+                                                   placeholder="Nome do subitem"
+                                                   onkeypress="if(event.key==='Enter') addSubitem(${item.id})">
+                                            <button class="btn btn-outline-success" onclick="addSubitem(${item.id})">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- Seleção de posto de trabalho com opção de criar novo -->
+                                        <div class="mb-2">
+                                            <select id="posto-${item.id}" class="form-select form-select-sm" onchange="handlePostoSelection(${item.id})">
+                                                <option value="">Selecione o posto de trabalho...</option>
+                                                ${postosTrabalhoGlobais.map(posto => `<option value="${posto.nome}">${posto.nome}</option>`).join('')}
+                                                <option value="__criar_novo__" class="text-primary">➕ Criar novo posto...</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <!-- Campo para criar novo posto (oculto inicialmente) -->
+                                        <div id="newPostoField-${item.id}" class="mb-2" style="display: none;">
+                                            <div class="input-group input-group-sm">
+                                                <input type="text" 
+                                                       id="newPostoInput-${item.id}" 
+                                                       class="form-control" 
+                                                       placeholder="Digite o nome do novo posto"
+                                                       onkeypress="if(event.key==='Enter') createNewPosto(${item.id})">
+                                                <button class="btn btn-success btn-sm" onclick="createNewPosto(${item.id})" title="Criar posto">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                                <button class="btn btn-secondary btn-sm" onclick="cancelNewPosto(${item.id})" title="Cancelar">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <button class="btn btn-outline-danger btn-sm" onclick="removeMainItem(${item.id})">
+                                            <i class="fas fa-trash me-1"></i>
+                                            Remover Item
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Seção de Postos de Trabalho Importados - Versão Discreta -->
+                                    ${item.postosTrabalho && item.postosTrabalho.length > 0 ? `
+                                        <div class="postos-section-minimal mb-2">
+                                            <div class="postos-indicator" onclick="togglePostosList(${item.id})" style="cursor: pointer;">
+                                                <small class="text-muted d-flex align-items-center justify-content-between">
+                                                    <span>
+                                                        <i class="fas fa-map-marker-alt me-1" style="font-size: 0.7em;"></i>
+                                                        ${item.postosTrabalho.length} posto${item.postosTrabalho.length > 1 ? 's' : ''} de trabalho
+                                                    </span>
+                                                    <i class="fas fa-angle-down postos-toggle-icon" id="postosIcon-${item.id}" style="font-size: 0.7em;"></i>
+                                                </small>
+                                            </div>
+                                            <div class="postos-list-compact" id="postosList-${item.id}" style="display: none; margin-top: 6px;">
+                                                <div class="postos-grid">
+                                                    ${item.postosTrabalho.map(posto => `
+                                                        <span class="posto-tag">
+                                                            ${posto.nome}
+                                                        </span>
+                                                    `).join('')}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                    
+                                    <div class="subitems-section">
+                                        <div class="section-header">
+                                            <h6><i class="fas fa-tasks me-2"></i>Subitens</h6>
+                                            <small class="text-muted">Gerenciar tarefas e atividades.</small>
+                                        </div>
+                                        
+                                        ${totalSubitens === 0 ? 
+                                            '<div class="empty-subitens"><em class="text-muted">Nenhum subitem adicionado</em></div>' :
+                                            `
+                                            <div class="subitens-list">
+                                                ${item.subitens.map(subitem => {
+                                                    const statusPrazo = getStatusPrazo(subitem.proximoPrazo, subitem.status);
+                                                    const classeItem = getClasseItemPrazo(subitem.proximoPrazo, subitem.status);
+                                                    
+                                                    return `
+                                                    <div class="subitem-item ${classeItem}">
+                                                        <div class="subitem-info">
+                                                            <div class="subitem-name">
+                                                                ${subitem.nome}
+                                                                ${subitem.postoTrabalho && subitem.postoTrabalho !== 'N/A' ? 
+                                                                    `<span class="posto-badge"><i class="fas fa-map-marker-alt me-1"></i>${subitem.postoTrabalho}</span>` : ''
+                                                                }
+                                                            </div>
+                                                            <div class="subitem-details">
+                                                                <span class="status-badge status-${subitem.status.toLowerCase().replace(' ', '-')}">${subitem.status}</span>
+                                                                ${subitem.proximoPrazo ? `<div class="mt-1 small ${statusPrazo.classe}"><i class="fas fa-clock me-1"></i>Próximo: ${formatDate(subitem.proximoPrazo)} (${statusPrazo.texto})</div>` : ''}
+                                                                ${subitem.observations ? `<div class="mt-1 text-muted small"><i class="fas fa-comment me-1"></i>${subitem.observations}</div>` : ''}
+                                                            </div>
+                                                        </div>
+                                                        <div class="subitem-actions">
+                                                            <button class="btn btn-success btn-sm" 
+                                                                    onclick="concluirSubitem(${item.id}, ${subitem.id})"
+                                                                    title="Concluir tarefa">
+                                                                <i class="fas fa-check"></i>
+                                                            </button>
+                                                            <button class="btn btn-outline-primary btn-sm" onclick="editSubitem(${item.id}, ${subitem.id})" title="Editar">
+                                                                <i class="fas fa-edit"></i>
+                                                            </button>
+                                                            <button class="btn btn-outline-danger btn-sm" onclick="removeSubitem(${item.id}, ${subitem.id})" title="Remover">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    `;
+                                                }).join('')}
+                                            </div>
+                                            `
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Renderizar também a lista de postos globais se o container existir
+            renderPostosGlobais();
+            
+            // Atualizar contadores dos filtros
+            updateFilterCounters();
+            
+            // Atualizar indicador de status do sistema híbrido
+            atualizarIndicadorStatus();
+        }
+
+        // Função para sincronização automática em background
+        function sincronizarAutomatico() {
+            console.log('🔄 Verificando se pode sincronizar automaticamente...');
+            
+            if (!sistemaHibrido.ativo || !sistemaHibrido.pastaRede) {
+                return;
+            }
+            
+            // Não executar se já estiver sincronizando
+            if (sistemaHibrido.status === 'sincronizando') {
+                return;
+            }
+            
+            // Verificar se modal está aberto (evitar conflito)
+            const modalAberto = document.getElementById('conflictModal');
+            if (modalAberto && modalAberto.style.display !== 'none') {
+                console.log('⚠️ Modal aberto - pulando sincronização automática');
+                return;
+            }
+            
+            console.log('🔄 Executando sincronização automática...');
+            executarSincronizacao();
+        }
+
+        // Função para atualizar indicador de status do sistema híbrido
+        function atualizarIndicadorStatus() {
+            const statusElement = document.getElementById('statusSincronizacao');
+            if (!statusElement) return;
+            
+            if (!sistemaHibrido.ativo) {
+                statusElement.innerHTML = `
+                    <span class="badge bg-secondary">
+                        <i class="fas fa-database"></i> Local
+                    </span>
+                `;
+                return;
+            }
+            
+            const agora = Date.now();
+            const ultimaSync = sistemaHibrido.ultimaSincronizacao;
+            const tempoSemSync = ultimaSync ? agora - ultimaSync : null;
+            
+            let statusClass = 'bg-success';
+            let statusText = 'Sincronizado';
+            let statusIcon = 'fa-sync';
+            
+            if (sistemaHibrido.status === 'erro') {
+                statusClass = 'bg-danger';
+                statusText = 'Erro de Rede';
+                statusIcon = 'fa-exclamation-triangle';
+            } else if (sistemaHibrido.status === 'sincronizando') {
+                statusClass = 'bg-warning';
+                statusText = 'Sincronizando...';
+                statusIcon = 'fa-spinner fa-spin';
+            } else if (tempoSemSync && tempoSemSync > 300000) { // 5 minutos
+                statusClass = 'bg-warning';
+                statusText = 'Desatualizado';
+                statusIcon = 'fa-clock';
+            }
+            
+            statusElement.innerHTML = `
+                <span class="badge ${statusClass}">
+                    <i class="fas ${statusIcon}"></i> ${statusText}
+                </span>
+            `;
+        }
+
+        // Exportar para Excel - Versão melhorada
+        function exportExcel() {
+            console.log('� Iniciando exportação Excel...');
+            
+            if (cronogramaData.length === 0) {
+                showAlert('⚠️ Não há dados para exportar.\n\nAdicione alguns itens ao cronograma primeiro.', 'warning');
+                return;
+            }
+            
+            try {
+                const wb = XLSX.utils.book_new();
+                
+                // Preparar dados para exportação
+                const wsData = [];
+                
+                // Cabeçalho
+                wsData.push(['Nome da Tarefa', 'Frequência (dias)', 'Postos de Trabalho']);
+                
+                // Dados
+                cronogramaData.forEach(item => {
+                    const postosString = item.postosTrabalho && item.postosTrabalho.length > 0 
+                        ? item.postosTrabalho.map(p => p.nome).join(', ')
+                        : '';
+                    
+                    wsData.push([
+                        item.name || '',
+                        item.frequencia || '',
+                        postosString
+                    ]);
+                });
+
+                // Criar planilha
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                
+                // Ajustar largura das colunas
+                const colWidths = [
+                    { wch: 30 }, // Nome da Tarefa
+                    { wch: 15 }, // Frequência
+                    { wch: 40 }  // Postos de Trabalho
+                ];
+                ws['!cols'] = colWidths;
+                
+                // Adicionar planilha ao workbook
+                XLSX.utils.book_append_sheet(wb, ws, 'Cronograma');
+                
+                // Gerar nome do arquivo com data
+                const today = new Date().toISOString().split('T')[0];
+                const filename = `cronograma_${today}.xlsx`;
+                
+                // Download do arquivo
+                XLSX.writeFile(wb, filename);
+                
+                console.log('✅ Exportação concluída:', filename);
+                showAlert(`✅ Cronograma exportado com sucesso!\n\n📊 ${cronogramaData.length} itens exportados\n💾 Arquivo: ${filename}`, 'success');
+                
+            } catch (error) {
+                console.error('❌ Erro na exportação:', error);
+                showAlert('❌ Erro ao exportar dados:\n\n' + error.message, 'danger');
+            }
+        }
+
+        // Importar do Excel
+        function importExcel() {
+            console.log('� Iniciando processo de importação Excel...');
+            document.getElementById('fileInput').click();
+        }
+
+        // Handle file import - Versão simplificada e robusta
+        function handleFileImport(event) {
+            console.log('📥 Iniciando importação Excel...');
+            const file = event.target.files[0];
+            if (!file) {
+                console.log('❌ Nenhum arquivo selecionado');
+                return;
+            }
+            
+            console.log('📄 Arquivo selecionado:', file.name);
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    console.log('🔄 Processando arquivo...');
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+                        throw new Error('Arquivo Excel não contém planilhas válidas');
+                    }
+                    
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    if (!jsonData || jsonData.length <= 1) {
+                        throw new Error('Planilha está vazia ou só contém cabeçalho');
+                    }
+                    
+                    console.log('📊 Dados extraídos:', jsonData.length, 'linhas');
+                    
+                    // Limpar dados anteriores
+                    cronogramaData = [];
+                    
+                    // Conjunto para rastrear postos únicos
+                    const novosPostos = new Set();
+                    
+                    // Processar dados - formato simples: [Nome, Frequência, Postos]
+                    for (let i = 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        const itemName = row[0]; // Coluna A: Nome da Tarefa
+                        const frequencia = row[1] || ''; // Coluna B: Frequência
+                        const postosString = row[2] || ''; // Coluna C: Postos de Trabalho
+                        
+                        if (itemName && itemName.trim()) {
+                            const novoItem = {
+                                id: Date.now() + Math.random() * 1000 + i,
+                                name: itemName.trim(),
+                                frequencia: frequencia.toString().trim(),
+                                postosTrabalho: [],
+                                subitens: []
+                            };
+                            
+                            // Processar postos de trabalho se existirem
+                            if (postosString && postosString.trim()) {
+                                const postos = postosString.split(/[,;]+/)
+                                    .map(p => p.trim())
+                                    .filter(p => p.length > 0);
+                                
+                                postos.forEach((postoNome, index) => {
+                                    // Adicionar ao item
+                                    novoItem.postosTrabalho.push({
+                                        id: Date.now() + Math.random() * 1000 + index,
+                                        nome: postoNome
+                                    });
+                                    
+                                    // Rastrear para adicionar aos postos globais
+                                    novosPostos.add(postoNome);
+                                });
+                            }
+                            
+                            cronogramaData.push(novoItem);
+                        }
+                    }
+                    
+                    // Adicionar novos postos aos postos globais (se não existirem)
+                    novosPostos.forEach(nomeNovoPosto => {
+                        const jaExiste = postosTrabalhoGlobais.some(posto => 
+                            posto.nome.toLowerCase() === nomeNovoPosto.toLowerCase()
+                        );
+                        
+                        if (!jaExiste) {
+                            postosTrabalhoGlobais.push({
+                                id: Date.now() + Math.random() * 1000,
+                                nome: nomeNovoPosto
+                            });
+                            console.log('➕ Novo posto adicionado:', nomeNovoPosto);
+                        }
+                    });
+                    
+                    console.log('✅ Processamento concluído:', cronogramaData.length, 'itens importados');
+                    console.log('📍 Postos globais atualizados:', postosTrabalhoGlobais.length, 'postos');
+                    
+                    // Atualizar interface e salvar
+                    renderItems();
+                    saveData();
+                    
+                    showAlert(`✅ Dados importados com sucesso!\n\n📊 ${cronogramaData.length} itens carregados da planilha "${file.name}"`, 'success');
+                    
+                } catch (error) {
+                    console.error('❌ Erro na importação:', error);
+                    showAlert(`❌ Erro ao importar arquivo:\n\n${error.message}\n\nVerifique se o arquivo Excel está no formato correto:\n• Coluna A: Nome da Tarefa\n• Coluna B: Frequência (opcional)\n• Coluna C: Postos de Trabalho (opcional)`, 'danger');
+                }
+            };
+            
+            reader.onerror = function() {
+                console.error('❌ Erro ao ler arquivo');
+                showAlert('❌ Erro ao ler o arquivo. Tente novamente.', 'danger');
+            };
+            
+            reader.readAsArrayBuffer(file);
+            
+            // Reset input para permitir reimportação do mesmo arquivo
+            event.target.value = '';
+        }
+
+        // Exportar todos os dados para arquivo JSON
+        function exportarTodosDados() {
+            try {
+                const dadosCompletos = {
+                    cronogramaData: cronogramaData,
+                    historicoData: historicoData,
+                    postosTrabalhoGlobais: postosTrabalhoGlobais,
+                    dataExportacao: new Date().toISOString(),
+                    versaoSistema: "1.0",
+                    totalItens: cronogramaData.length,
+                    totalHistorico: historicoData.length,
+                    totalPostos: postosTrabalhoGlobais.length
+                };
+                
+                const jsonString = JSON.stringify(dadosCompletos, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const today = new Date().toISOString().split('T')[0];
+                const filename = `cronograma_backup_${today}.json`;
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showAlert(`✅ Backup completo exportado com sucesso!\n\n📊 Resumo:\n• ${dadosCompletos.totalItens} itens principais\n• ${dadosCompletos.totalHistorico} registros de histórico\n• ${dadosCompletos.totalPostos} postos de trabalho\n\n💾 Arquivo: ${filename}`, 'success');
+            } catch (error) {
+                showAlert('❌ Erro ao exportar dados: ' + error.message, 'danger');
+            }
+        }
+
+        // Importar todos os dados de arquivo JSON
+        function importarTodosDados() {
+            document.getElementById('jsonFileInput').click();
+        }
+
+        // Handle da importação de arquivo JSON
+        function handleJsonImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const dadosImportados = JSON.parse(e.target.result);
+                    
+                    // Validar estrutura do arquivo
+                    if (!dadosImportados.cronogramaData || !Array.isArray(dadosImportados.cronogramaData)) {
+                        throw new Error('Arquivo inválido: não contém dados de cronograma válidos');
+                    }
+                    
+                    // Confirmar importação
+                    const resumo = `🔄 IMPORTAR DADOS\n\n📊 Dados encontrados no arquivo:\n• ${dadosImportados.totalItens || dadosImportados.cronogramaData.length} itens principais\n• ${dadosImportados.totalHistorico || (dadosImportados.historicoData ? dadosImportados.historicoData.length : 0)} registros de histórico\n• ${dadosImportados.totalPostos || (dadosImportados.postosTrabalhoGlobais ? dadosImportados.postosTrabalhoGlobais.length : 0)} postos de trabalho\n\n⚠️ ATENÇÃO: Isso substituirá TODOS os dados atuais!\n\nDeseja continuar?`;
+                    
+                    if (confirm(resumo)) {
+                        // Importar dados
+                        cronogramaData = dadosImportados.cronogramaData || [];
+                        historicoData = dadosImportados.historicoData || [];
+                        postosTrabalhoGlobais = dadosImportados.postosTrabalhoGlobais || [];
+                        
+                        // Salvar no localStorage
+                        saveData();
+                        
+                        // Atualizar interface
+                        renderItems();
+                        
+                        showAlert('✅ Dados importados com sucesso!\n\n🔄 Todos os dados foram restaurados do backup.', 'success');
+                    }
+                } catch (error) {
+                    showAlert('❌ Erro ao importar arquivo: ' + error.message + '\n\nVerifique se o arquivo é um backup válido do sistema.', 'danger');
+                }
+            };
+            reader.readAsText(file);
+            
+            // Reset input
+            event.target.value = '';
+        }
+
+        // Verificar se precisa fazer backup (chamado periodicamente)
+        function verificarNecessidadeBackup() {
+            const totalRegistros = cronogramaData.length + historicoData.length;
+            const ultimoBackup = localStorage.getItem('ultimoBackupAlert');
+            const hoje = new Date().toDateString();
+            
+            // Se há muitos dados e não alertou hoje
+            if (totalRegistros >= 10 && ultimoBackup !== hoje) {
+                setTimeout(() => {
+                    if (confirm('💾 RECOMENDAÇÃO DE BACKUP\n\nVocê já tem ' + totalRegistros + ' registros no sistema.\n\nRecomendamos fazer um backup dos seus dados regularmente para não perdê-los.\n\nDeseja fazer um backup agora?')) {
+                        exportarTodosDados();
+                    }
+                    localStorage.setItem('ultimoBackupAlert', hoje);
+                }, 2000);
+            }
+        }
+
+        // Utilitários
+        function getCurrentDateString() {
+            const date = new Date();
+            return date.getFullYear() + '-' + 
+                   String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+                   String(date.getDate()).padStart(2, '0');
+        }
+        
+        function dateToString(date) {
+            return date.getFullYear() + '-' + 
+                   String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+                   String(date.getDate()).padStart(2, '0');
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            
+            // Evitar problemas de fuso horário ao usar datas no formato YYYY-MM-DD
+            const [year, month, day] = dateString.split('-');
+            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            
+            return date.toLocaleDateString('pt-BR');
+        }
+
+        function showAlert(message, type) {
+            // Remover alertas existentes
+            const existingAlerts = document.querySelectorAll('.alert-floating');
+            existingAlerts.forEach(alert => alert.remove());
+            
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-' + type + ' alert-floating position-fixed';
+            alert.style.top = '20px';
+            alert.style.right = '20px';
+            alert.style.zIndex = '9999';
+            alert.style.minWidth = '300px';
+            alert.innerHTML = 
+                message +
+                '<button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>';
+            
+            document.body.appendChild(alert);
+            
+            // Auto remover após 5 segundos
+            setTimeout(() => {
+                if (alert.parentElement) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+
+        // Renderizar histórico no modal customizado
+        function renderHistoricoCustomizado() {
+            console.log('Renderizando histórico customizado...');
+            const container = document.getElementById('conteudoHistoricoCustomizado');
+            
+            if (!container) {
+                console.error('Container do histórico não encontrado');
+                return;
+            }
+            
+            if (!historicoData || historicoData.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-history fa-3x mb-3"></i>
+                        <h5>Nenhum histórico encontrado</h5>
+                        <p>Quando você concluir tarefas, elas aparecerão aqui.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Aplicar filtros
+            let dadosFiltrados = [...historicoData];
+            
+            // Ordenar por data mais recente
+            dadosFiltrados.sort((a, b) => new Date(b.dataExecucao) - new Date(a.dataExecucao));
+            
+            // Criar tabela
+            const tabela = `
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Data</th>
+                            <th>Tarefa Principal</th>
+                            <th>Subitem</th>
+                            <th>Posto</th>
+                            <th>Observações</th>
+                            <th>Tipo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${dadosFiltrados.map(registro => `
+                            <tr>
+                                <td>${formatDate(registro.dataExecucao)}</td>
+                                <td><strong>${registro.tarefaPrincipal}</strong></td>
+                                <td>${registro.subitem}</td>
+                                <td><span class="badge bg-info">${registro.postoTrabalho}</span></td>
+                                <td>${registro.observacoes || '-'}</td>
+                                <td>
+                                    ${registro.tipoAcao === 'DESCARTE' ? 
+                                        '<span class="badge bg-warning">🗑️ Descarte</span>' : 
+                                        '<span class="badge bg-success">✅ Conclusão</span>'
+                                    }
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = tabela;
+        }
+        
+        // Função para formatar data
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('pt-BR');
+            } catch (error) {
+                return dateString;
+            }
+        }
+        
+        // Função para converter date para string
+        function dateToString(date) {
+            if (!date) return '';
+            try {
+                return date.getFullYear() + '-' + 
+                       String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+                       String(date.getDate()).padStart(2, '0');
+            } catch (error) {
+                return '';
+            }
+        }
+        
+        // Função para obter data atual formatada
+        function getCurrentDateString() {
+            const hoje = new Date();
+            return hoje.getFullYear() + '-' + 
+                   String(hoje.getMonth() + 1).padStart(2, '0') + '-' + 
+                   String(hoje.getDate()).padStart(2, '0');
+        }
+        
+        // Função para verificar necessidade de backup
+        function verificarNecessidadeBackup() {
+            const totalRegistros = cronogramaData.length + historicoData.length;
+            if (totalRegistros >= 10) {
+                const ultimoBackup = localStorage.getItem('ultimoBackupData');
+                const agora = Date.now();
+                const seteDias = 7 * 24 * 60 * 60 * 1000;
+                
+                if (!ultimoBackup || (agora - parseInt(ultimoBackup)) > seteDias) {
+                    setTimeout(() => {
+                        if (confirm('💾 Sugestão: Você tem ' + totalRegistros + ' registros.\n\nDeseja fazer um backup completo agora?')) {
+                            exportarTodosDados();
+                        }
+                    }, 2000);
+                }
+            }
+        }
+        
+        // Event listeners
+        document.getElementById('newItemName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addMainItem();
+            }
+        });
+
+        // ===========================================
+        // INTEGRAÇÃO COM SERVIDOR LOCAL SQLITE
+        // ===========================================
+        
+        // Verificar se estamos rodando no servidor local
+        let servidorLocalAtivo = false;
+        let modoHibrido = true; // Compatibilidade com sistema híbrido existente
+        
+        // Verificar conexão com servidor local
+        async function verificarServidorLocal() {
+            try {
+                const response = await fetch('/api/cronograma');
+                if (response.ok) {
+                    servidorLocalAtivo = true;
+                    console.log('🚀 Servidor local SQLite conectado');
+                    await sincronizarComServidor();
+                    return true;
+                }
+            } catch (error) {
+                console.log('📱 Modo local - usando localStorage');
+                servidorLocalAtivo = false;
+            }
+            return false;
+        }
+        
+        // Sincronizar dados existentes do localStorage com o servidor
+        async function sincronizarComServidor() {
+            if (!servidorLocalAtivo) return;
+            
+            try {
+                // Carregar dados do localStorage
+                const dadosLocais = localStorage.getItem('cronogramaData');
+                if (dadosLocais) {
+                    const itens = JSON.parse(dadosLocais);
+                    
+                    // Verificar se o servidor já tem dados
+                    const response = await fetch('/api/cronograma');
+                    const dadosServidor = await response.json();
+                    
+                    // Se servidor estiver vazio, migrar dados do localStorage
+                    if (dadosServidor.length === 0 && itens.length > 0) {
+                        console.log('📊 Migrando dados do localStorage para SQLite...');
+                        
+                        for (const item of itens) {
+                            const novoItem = {
+                                name: item.name,
+                                frequencia: item.frequencia || 1,
+                                subitens: item.subitems ? item.subitems.map(sub => ({
+                                    nome: sub.name,
+                                    status: sub.status || 'Pendente',
+                                    posto_trabalho: sub.postoTrabalho || '',
+                                    observacoes: sub.observacoes || '',
+                                    data_realizacao: sub.dataRealizacao || null
+                                })) : []
+                            };
+                            
+                            await fetch('/api/cronograma', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(novoItem)
+                            });
+                        }
+                        
+                        console.log('✅ Migração concluída!');
+                    }
+                    
+                    // Carregar dados atualizados do servidor
+                    await carregarDadosDoServidor();
+                }
+            } catch (error) {
+                console.error('❌ Erro na sincronização:', error);
+            }
+        }
+        
+        // Carregar dados do servidor SQLite
+        async function carregarDadosDoServidor() {
+            if (!servidorLocalAtivo) return;
+            
+            try {
+                const response = await fetch('/api/cronograma');
+                const dadosServidor = await response.json();
+                
+                // Converter formato do servidor para formato do frontend
+                cronogramaData = dadosServidor.map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    frequencia: item.frequencia,
+                    subitems: item.subitens ? item.subitens.map(sub => ({
+                        id: sub.id,
+                        name: sub.nome,
+                        status: sub.status,
+                        postoTrabalho: sub.posto_trabalho,
+                        observacoes: sub.observacoes,
+                        dataRealizacao: sub.data_realizacao
+                    })) : []
+                }));
+                
+                // Atualizar interface
+                renderItems();
+                updateStats();
+                
+                console.log('📊 Dados carregados do servidor SQLite');
+            } catch (error) {
+                console.error('❌ Erro ao carregar do servidor:', error);
+            }
+        }
+        
+        // Sobrescrever função saveDataLocal para salvar no servidor
+        const saveDataLocalOriginal = window.saveDataLocal;
+        window.saveDataLocal = async function() {
+            // Salvar no localStorage como backup
+            if (saveDataLocalOriginal) {
+                saveDataLocalOriginal();
+            }
+            
+            // Se servidor ativo, sincronizar
+            if (servidorLocalAtivo) {
+                await salvarNoServidor();
+            }
+        };
+        
+        // Salvar dados no servidor SQLite
+        async function salvarNoServidor() {
+            if (!servidorLocalAtivo) return;
+            
+            try {
+                // Para simplificar, vamos recriar todos os dados
+                // Em produção, seria melhor fazer sync incremental
+                
+                for (const item of cronogramaData) {
+                    const dadosItem = {
+                        name: item.name,
+                        frequencia: item.frequencia || 1,
+                        subitens: item.subitems ? item.subitems.map(sub => ({
+                            nome: sub.name,
+                            status: sub.status || 'Pendente',
+                            posto_trabalho: sub.postoTrabalho || '',
+                            observacoes: sub.observacoes || '',
+                            data_realizacao: sub.dataRealizacao || null
+                        })) : []
+                    };
+                    
+                    if (item.id) {
+                        // Atualizar item existente
+                        await fetch(`/api/cronograma/${item.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(dadosItem)
+                        });
+                    } else {
+                        // Criar novo item
+                        const response = await fetch('/api/cronograma', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(dadosItem)
+                        });
+                        
+                        if (response.ok) {
+                            const resultado = await response.json();
+                            item.id = resultado.id; // Atualizar ID local
+                        }
+                    }
+                }
+                
+                console.log('💾 Dados salvos no servidor SQLite');
+            } catch (error) {
+                console.error('❌ Erro ao salvar no servidor:', error);
+            }
+        }
+        
+        // Inicializar APENAS localStorage (servidor SQLite desabilitado)
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('📱 Iniciando em modo localStorage apenas...');
+            
+            // DESABILITADO: await verificarServidorLocal();
+            // DESABILITADO: setInterval(verificarServidorLocal, 30000);
+            
+            console.log('✅ Sistema iniciado sem sincronização automática com servidor');
+        });
+
+        document.getElementById('newItemFrequencia').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addMainItem();
+            }
+        });
+
+        // Permitir Enter para salvar no modal
+        document.getElementById('editSubitemForm').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveSubitem();
+            }
+        });
+    </script>
+</body>
+</html>
